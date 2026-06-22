@@ -90,7 +90,7 @@ export default function CheckoutPage() {
       setDeliveryDays({ min: null, max: null });
       return;
     }
-    if (!city.trim() && !postalCode.trim()) {
+    if (!city.trim() && !postalCode.trim() && !pvz) {
       setDeliveryCost(0);
       setDeliveryDays({ min: null, max: null });
       return;
@@ -105,6 +105,7 @@ export default function CheckoutPage() {
           body: JSON.stringify({
             region: city,
             postal_code: postalCode || undefined,
+            pvz_code: pvz?.code || undefined,
             total_qty: totalItems,
           }),
         });
@@ -123,7 +124,14 @@ export default function CheckoutPage() {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [delivery, city, postalCode, totalItems]);
+  }, [delivery, city, postalCode, pvz, totalItems]);
+
+  // При выборе ПВЗ на карте — автозаполняем адрес/индекс/город.
+  const handlePvzSelect = (point: CdekPoint) => {
+    setPvz(point);
+    if (point.city) setCity(point.city);
+    if (point.postalCode) setPostalCode(point.postalCode);
+  };
 
   if (items.length === 0 && step !== "processing") {
     return (

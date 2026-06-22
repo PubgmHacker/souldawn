@@ -21,7 +21,7 @@ export default function HeroSection() {
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(120% 90% at 50% 110%, rgba(200,16,46,0.14) 0%, transparent 55%), linear-gradient(180deg, #070708 0%, #0B0B0D 60%, #070708 100%)",
+            "radial-gradient(120% 90% at 50% 110%, rgba(232,184,122,0.16) 0%, rgba(168,106,61,0.06) 35%, transparent 65%), linear-gradient(180deg, #08080A 0%, #0C0C0F 60%, #08080A 100%)",
         }}
       />
       {/* Тонкая верхняя линия-затемнение для глубины */}

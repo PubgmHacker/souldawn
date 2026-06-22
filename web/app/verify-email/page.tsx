@@ -44,7 +44,7 @@ function VerifyResult() {
           </div>
         ) : (
           <div className="w-16 h-16 rounded-full bg-accent-red/10 flex items-center justify-center mb-6">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8B2500" strokeWidth="2">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4915C" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>

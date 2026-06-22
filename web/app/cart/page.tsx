@@ -108,6 +108,12 @@ export default function CartPage() {
                         <span className="text-[10px] font-bold tracking-wider text-muted border border-white/10 px-2 py-0.5">
                           Размер: {item.size}
                         </span>
+                        {typeof item.product.stock === "number" &&
+                          item.quantity >= item.product.stock && (
+                            <span className="text-[10px] font-bold tracking-wider text-accent-red">
+                              Максимум: {item.product.stock} шт.
+                            </span>
+                          )}
                       </div>
                     </div>
 
@@ -125,7 +131,11 @@ export default function CartPage() {
                         </span>
                         <button
                           onClick={() => updateQuantity(item.product.id, item.size, item.quantity + 1)}
-                          className="w-8 h-8 flex items-center justify-center text-muted hover:text-text hover:bg-white/5 transition-all duration-200"
+                          disabled={
+                            typeof item.product.stock === "number" &&
+                            item.quantity >= item.product.stock
+                          }
+                          className="w-8 h-8 flex items-center justify-center text-muted hover:text-text hover:bg-white/5 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                         >
                           +
                         </button>
@@ -164,7 +174,7 @@ export default function CartPage() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted">Доставка</span>
-                    <span className="text-text font-bold">Бесплатно</span>
+                    <span className="text-muted">рассчитается при оформлении</span>
                   </div>
                   <div className="h-[1px] bg-white/10 my-2" />
                   <div className="flex justify-between">
@@ -202,7 +212,7 @@ export default function CartPage() {
                       <circle cx="5.5" cy="18.5" r="2.5" />
                       <circle cx="18.5" cy="18.5" r="2.5" />
                     </svg>
-                    <span className="text-[11px] text-muted">Бесплатная доставка по всей стране</span>
+                    <span className="text-[11px] text-muted">Доставка СДЭК по всей стране</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-accent">

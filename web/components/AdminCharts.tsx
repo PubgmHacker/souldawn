@@ -3,8 +3,9 @@
 import {
   BarChart, Bar,
   LineChart, Line,
+  FunnelChart, Funnel, LabelList,
   XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend,
+  ResponsiveContainer, Legend, Cell,
 } from "recharts";
 
 export interface ChartStats {
@@ -18,6 +19,8 @@ export interface ChartStats {
   net_profit_this_week: number;
   net_profit_this_month: number;
   user_growth_chart?: { date: string; count: number }[];
+  // Воронка заказов
+  orders_funnel?: { name: string; value: number }[];
 }
 
 const toRub = (k: number) => Math.round((k || 0) / 100);
@@ -31,6 +34,8 @@ const TOOLTIP_STYLE = {
     color: "#F2EEE9",
   },
 };
+
+const FUNNEL_COLORS = ["#E8B87A", "#D4915C", "#A86A3D", "#4caf50", "#ef5350"];
 
 export default function AdminCharts({ stats }: { stats: ChartStats }) {
   const barData = [
@@ -55,17 +60,17 @@ export default function AdminCharts({ stats }: { stats: ChartStats }) {
   ];
 
   const lineData = (stats.user_growth_chart || []).map((d) => ({
-    date: d.date.slice(5), // MM-DD
+    date: d.date.slice(5),
     count: d.count,
   }));
 
+  const funnelData = stats.orders_funnel || [];
+
   return (
     <div className="space-y-6">
-      {/* Бар чарт: выручка/расходы/прибыль */}
+      {/* Бар чарт */}
       <div className="border border-line bg-surface/50 p-6">
-        <h3 className="text-[10px] font-bold tracking-widest uppercase text-accent mb-6">
-          Динамика (₽)
-        </h3>
+        <h3 className="text-[10px] font-bold tracking-widest uppercase text-accent mb-6">Динамика (₽)</h3>
         <div style={{ width: "100%", height: 300 }}>
           <ResponsiveContainer>
             <BarChart data={barData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
@@ -73,8 +78,7 @@ export default function AdminCharts({ stats }: { stats: ChartStats }) {
               <XAxis dataKey="period" stroke="rgba(242,238,233,0.3)" fontSize={11} />
               <YAxis stroke="rgba(242,238,233,0.3)" fontSize={11} width={70}
                 tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}т` : String(v)} />
-              <Tooltip {...TOOLTIP_STYLE}
-                formatter={(v: number) => `${v.toLocaleString("ru-RU")} ₽`} />
+              <Tooltip {...TOOLTIP_STYLE} formatter={(v: number) => `${v.toLocaleString("ru-RU")} ₽`} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar dataKey="Выручка" fill="#E8B87A" radius={[2,2,0,0]} />
               <Bar dataKey="Расходы"  fill="#A86A3D" radius={[2,2,0,0]} />
@@ -84,7 +88,28 @@ export default function AdminCharts({ stats }: { stats: ChartStats }) {
         </div>
       </div>
 
-      {/* Линейный график: новые пользователи за 30 дней */}
+      {/* Воронка заказов */}
+      {funnelData.length > 0 && (
+        <div className="border border-line bg-surface/50 p-6">
+          <h3 className="text-[10px] font-bold tracking-widest uppercase text-accent mb-6">Воронка заказов</h3>
+          <div style={{ width: "100%", height: 260 }}>
+            <ResponsiveContainer>
+              <FunnelChart>
+                <Tooltip {...TOOLTIP_STYLE} formatter={(v: number) => [`${v} шт.`, ""]} />
+                <Funnel dataKey="value" data={funnelData} isAnimationActive>
+                  <LabelList position="right" fill="#B7B2AC" fontSize={11}
+                    formatter={(v: number, entry: any) => `${entry?.name}: ${v}`} />
+                  {funnelData.map((_, i) => (
+                    <Cell key={i} fill={FUNNEL_COLORS[i % FUNNEL_COLORS.length]} />
+                  ))}
+                </Funnel>
+              </FunnelChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* Линейный график новых пользователей */}
       {lineData.length > 0 && (
         <div className="border border-line bg-surface/50 p-6">
           <h3 className="text-[10px] font-bold tracking-widest uppercase text-accent mb-6">
@@ -97,13 +122,9 @@ export default function AdminCharts({ stats }: { stats: ChartStats }) {
                 <XAxis dataKey="date" stroke="rgba(242,238,233,0.3)" fontSize={10}
                   interval={Math.floor(lineData.length / 6)} />
                 <YAxis stroke="rgba(242,238,233,0.3)" fontSize={10} width={30} allowDecimals={false} />
-                <Tooltip {...TOOLTIP_STYLE}
-                  formatter={(v: number) => [`${v} чел.`, "Новых"]} />
-                <Line
-                  type="monotone" dataKey="count"
-                  stroke="#E8B87A" strokeWidth={2}
-                  dot={false} activeDot={{ r: 4, fill: "#E8B87A" }}
-                />
+                <Tooltip {...TOOLTIP_STYLE} formatter={(v: number) => [`${v} чел.`, "Новых"]} />
+                <Line type="monotone" dataKey="count" stroke="#E8B87A" strokeWidth={2}
+                  dot={false} activeDot={{ r: 4, fill: "#E8B87A" }} />
               </LineChart>
             </ResponsiveContainer>
           </div>

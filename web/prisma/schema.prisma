@@ -79,14 +79,16 @@ model Cart {
 // ─── Заказы ──────────────────────────────────────────────────────
 // total — в копейках (integer). items/contact — JSONB.
 model Order {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId     String?  @map("user_id") @db.Uuid
-  items      Json
-  total      Int
-  status     String   @default("pending")
-  yookassaId String?  @map("yookassa_id")
-  contact    Json?
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String?  @map("user_id") @db.Uuid
+  items           Json
+  total           Int
+  status          String   @default("pending")
+  yookassaId      String?  @map("yookassa_id")
+  contact         Json?
+  trackingNumber  String?  @map("tracking_number")
+  trackingCarrier String?  @map("tracking_carrier")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
   user User? @relation(fields: [userId], references: [id])
 

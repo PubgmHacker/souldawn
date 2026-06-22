@@ -96,6 +96,23 @@ export async function computeFullStats(pendingPayments = 0) {
     return Math.round(((curr - prev) / prev) * 100);
   }
 
+  // Воронка заказов по статусам
+  const [cntPending, cntPaid, cntShipped, cntDelivered, cntCancelled] = await Promise.all([
+    prisma.order.count({ where: { status: "pending" } }),
+    prisma.order.count({ where: { status: "paid" } }),
+    prisma.order.count({ where: { status: "shipped" } }),
+    prisma.order.count({ where: { status: "delivered" } }),
+    prisma.order.count({ where: { status: "cancelled" } }),
+  ]);
+
+  const ordersFunnel = [
+    { name: "Ожидает",   value: cntPending   },
+    { name: "Оплачен",   value: cntPaid      },
+    { name: "Отправлен",  value: cntShipped   },
+    { name: "Доставлен",  value: cntDelivered },
+    { name: "Отменён",   value: cntCancelled },
+  ].filter((s) => s.value > 0);
+
   return {
     total_users: totalUsers,
     online_users: onlineUsers,
@@ -121,15 +138,15 @@ export async function computeFullStats(pendingPayments = 0) {
     net_profit_this_month: revMonth - expMonth,
     db_connected: true,
     pending_payments: pendingPayments,
-    // KPI рост (%)
     growth: {
-      revenue_week_pct:  pct(revWeek,      revPrevWeek),
-      revenue_month_pct: pct(revMonth,     revPrevMonth),
-      users_week_pct:    pct(newWeek,      newPrevWeek),
-      users_month_pct:   pct(newMonth,     newPrevMonth),
-      orders_week_pct:   pct(ordersWeek,   ordersPrevWeek),
-      orders_month_pct:  pct(ordersMonth,  ordersPrevMonth),
+      revenue_week_pct:  pct(revWeek,    revPrevWeek),
+      revenue_month_pct: pct(revMonth,   revPrevMonth),
+      users_week_pct:    pct(newWeek,    newPrevWeek),
+      users_month_pct:   pct(newMonth,   newPrevMonth),
+      orders_week_pct:   pct(ordersWeek, ordersPrevWeek),
+      orders_month_pct:  pct(ordersMonth,ordersPrevMonth),
     },
     user_growth_chart: userGrowthChart,
+    orders_funnel: ordersFunnel,
   };
 }

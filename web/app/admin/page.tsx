@@ -443,6 +443,52 @@ export default function AdminPage() {
                         <div className="text-[10px] text-muted mt-1">
                           {o.name || "—"} {o.username ? `@${o.username}` : ""} · {o.created_at ? new Date(o.created_at).toLocaleString("ru-RU") : "—"}
                         </div>
+                        {/* Трекинг + смена статуса */}
+                        <div className="mt-3 flex flex-wrap gap-2 items-center">
+                          <select
+                            defaultValue={o.status}
+                            onChange={async (e) => {
+                              await adminFetch(`/api/admin/orders/${o.id}`, {
+                                method: "PATCH",
+                                body: JSON.stringify({ status: e.target.value }),
+                              });
+                              await fetchOrders();
+                            }}
+                            className="bg-transparent border border-line px-2 py-1 text-[10px] text-text focus:outline-none focus:border-accent">
+                            {["pending","processing","paid","shipped","delivered","cancelled"].map((s) => (
+                              <option key={s} value={s}>{s}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="text"
+                            placeholder="Номер трекинга..."
+                            defaultValue={(o as any).tracking_number || ""}
+                            onBlur={async (e) => {
+                              const val = e.target.value.trim();
+                              if (val === ((o as any).tracking_number || "")) return;
+                              await adminFetch(`/api/admin/orders/${o.id}`, {
+                                method: "PATCH",
+                                body: JSON.stringify({ tracking_number: val }),
+                              });
+                              await fetchOrders();
+                            }}
+                            className="flex-1 bg-transparent border border-line px-2 py-1 text-[10px] text-text placeholder:text-muted/40 focus:outline-none focus:border-accent min-w-[120px]"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Перевозчик..."
+                            defaultValue={(o as any).tracking_carrier || ""}
+                            onBlur={async (e) => {
+                              const val = e.target.value.trim();
+                              if (val === ((o as any).tracking_carrier || "")) return;
+                              await adminFetch(`/api/admin/orders/${o.id}`, {
+                                method: "PATCH",
+                                body: JSON.stringify({ tracking_carrier: val }),
+                              });
+                            }}
+                            className="w-24 bg-transparent border border-line px-2 py-1 text-[10px] text-text placeholder:text-muted/40 focus:outline-none focus:border-accent"
+                          />
+                        </div>
                       </div>
                     ))}
                   </div>

@@ -28,7 +28,10 @@ interface ApiProduct {
 
 function toProduct(p: ApiProduct): Product {
   return {
-    id: p.slug || p.id,
+    // ВАЖНО: id — реальный uuid из БД. По нему create-payment ищет товар
+    // и списывает остаток. slug храним отдельно для URL.
+    id: p.id || p.slug,
+    slug: p.slug || undefined,
     name: p.name,
     price: p.price,
     oldPrice: p.oldPrice || undefined,

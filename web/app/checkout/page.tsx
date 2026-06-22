@@ -379,17 +379,44 @@ export default function CheckoutPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                   <div>
                     <label className="text-[10px] font-bold tracking-widest uppercase text-muted block mb-1.5">Город / регион</label>
-                    <input type="text" value={city} onChange={(e) => setCity(e.target.value)}
+                    <input type="text" value={city} onChange={(e) => { setCity(e.target.value); setPvz(null); }}
                       placeholder="Напр. Москва"
                       className="w-full bg-transparent border border-white/10 px-4 py-3 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-accent transition-colors duration-300" />
                   </div>
                   <div>
                     <label className="text-[10px] font-bold tracking-widest uppercase text-muted block mb-1.5">Индекс</label>
-                    <input type="text" value={postalCode} onChange={(e) => setPostalCode(e.target.value)}
+                    <input type="text" value={postalCode} onChange={(e) => { setPostalCode(e.target.value); setPvz(null); }}
                       placeholder="101000" inputMode="numeric"
                       className="w-full bg-transparent border border-white/10 px-4 py-3 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-accent transition-colors duration-300" />
                   </div>
                 </div>
+
+                {/* Карта ПВЗ СДЭК — выбор пункта выдачи */}
+                {delivery === "cdek" && (
+                  <div className="mt-4">
+                    <label className="text-[10px] font-bold tracking-widest uppercase text-muted block mb-2">
+                      Пункт выдачи на карте
+                    </label>
+                    <CdekMap
+                      city={city}
+                      postalCode={postalCode}
+                      selectedCode={pvz?.code ?? null}
+                      onSelect={handlePvzSelect}
+                    />
+                    {pvz && (
+                      <div className="mt-3 p-3 border border-accent/30 bg-accent/5 text-sm">
+                        <div className="font-bold text-text">{pvz.name}</div>
+                        <div className="text-[12px] text-muted mt-0.5">{pvz.fullAddress || pvz.address}</div>
+                        {pvz.workTime && (
+                          <div className="text-[11px] text-muted/70 mt-0.5">Режим: {pvz.workTime}</div>
+                        )}
+                        {pvz.postalCode && (
+                          <div className="text-[11px] text-muted/70">Индекс: {pvz.postalCode}</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </ScrollReveal>
 

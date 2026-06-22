@@ -1,7 +1,23 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
-const JWT_SECRET = process.env.JWT_SECRET || "souldawn_jwt_secret_change_in_production";
+// JWT_SECRET обязателен в production: дефолтный секрет позволяет подделать токен
+// (включая role=owner) и обойти всю админку. В dev допускаем явный fallback.
+const JWT_SECRET = (() => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "JWT_SECRET is required in production. Set a strong random value."
+      );
+    }
+    return "souldawn_jwt_secret_dev_only";
+  }
+  if (process.env.NODE_ENV === "production" && secret.length < 32) {
+    throw new Error("JWT_SECRET must be at least 32 characters in production.");
+  }
+  return secret;
+})();
 const JWT_EXPIRES_IN = "24h";
 const REFRESH_EXPIRES_IN = "7d";
 

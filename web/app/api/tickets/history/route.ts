@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
+// Глобальный патч для сериализации BigInt в JSON
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
+
 const prisma = new PrismaClient();
 
 export async function GET(req: Request) {
@@ -12,7 +17,6 @@ export async function GET(req: Request) {
       return NextResponse.json({ tickets: [] });
     }
 
-    // ХИТРОСТЬ: Оборачиваем весь поиск в try/catch, чтобы сбой БД не ломал сетевой ответ сайта
     let user = null;
     try {
       user = await prisma.user.findFirst({
@@ -24,7 +28,7 @@ export async function GET(req: Request) {
         },
       });
     } catch (dbErr) {
-      console.error("Database query failed, returning empty context:", dbErr);
+      console.error("Database query failed:", dbErr);
       return NextResponse.json({ tickets: [], status: "db_offline" });
     }
 
@@ -57,7 +61,6 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ tickets: formattedTickets });
   } catch (error: any) {
-    // ЖЕСТКИЙ ФОЛЛБЭК: Даже при полной критической ошибке возвращаем 200 OK с пустым массивом
     return NextResponse.json({ tickets: [], error: error.message }, { status: 200 });
   }
 }

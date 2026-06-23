@@ -13,7 +13,6 @@ router = Router()
 class ReplyStates(StatesGroup):
     waiting_for_reply_text = State()
 
-# Безопасное чтение переменной окружения напрямую из Railway без падений импорта
 RAW_URL = os.getenv("MINIAPP_URL", "https://railway.app")
 BASE_URL = RAW_URL.rstrip("/") + "/"
 
@@ -44,14 +43,13 @@ async def process_operator_reply_text(message: Message, state: FSMContext):
         payload = {"ticketId": ticket_id, "sender": "operator", "text": text}
         await session.post(BASE_URL + "api/tickets/messages", json=payload)
         await session.post(BASE_URL + f"api/admin/tickets/{ticket_id}/reply", json={"reply": text})
-
     await message.answer("✅ <b>Ответ успешно отправлен и заархивирован!</b>", parse_mode="HTML")
 
 @router.message(Command("debug"))
 @router.callback_query(F.data == "admin:debug_menu")
 async def call_debug_menu_click(event: Message | CallbackQuery):
     message = event if isinstance(event, Message) else event.message
-    debug_text = "🛠️ <b>SOULDAWN SUPPORT · ИЗОЛИРОВАННАЯ ДЕБАГ-ПАНЕЛЬ</b>\n\nВыберите действие для генерации сквозных тестов:"
+    debug_text = "🛠️ <b>SOULDAWN SUPPORT · ИЗОЛИРОВАННАЯ ДЕБАГ-ПАНЕЛЬ</b>\n\nВыберите действие для тестов:"
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📥 Имитировать обращение с сайта", callback_data="debug:simulate_web")],
         [InlineKeyboardButton(text="🤖 Имитировать обращение с ТГ-бота", callback_data="debug:simulate_tg")],

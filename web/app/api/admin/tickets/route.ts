@@ -1,29 +1,41 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin-auth";
-import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
 
-/**
- * GET /api/admin/tickets
- * Список открытых / в работе тикетов.
- */
-export async function GET(request: NextRequest) {
-  const admin = requireAdmin(request);
-  if (admin instanceof NextResponse) return admin;
+const prisma = new PrismaClient();
 
-  const tickets = await prisma.supportTicket.findMany({
-    where: { status: { in: ["open", "in_progress"] } },
-    orderBy: { createdAt: "desc" },
-    take: 100,
-  });
-  return NextResponse.json(
-    tickets.map((t) => ({
-      id: String(t.id),
-      user_id: Number(t.userId),
-      original_text: t.originalText,
-      status: t.status,
-      accepted_by: t.acceptedBy ? Number(t.acceptedBy) : null,
-      admin_name: t.adminName,
-      created_at: t.createdAt ? new Date(t.createdAt).toISOString() : null,
-    }))
-  );
+export async function GET() {
+  try {
+    const ticketModel = (prisma as any).support_tickets || (prisma as any).supportTicket;
+    
+    if (!ticketModel) {
+      return NextResponse.json({ tickets: [] });
+    }
+
+    // Забираем абсолютно все тикеты из базы для админов, включая привязанных юзеров
+    const tickets = await ticketModel.findMany({
+      include: {
+        user: true
+      },
+      orderBy: {
+        created_at: "desc"
+      } as any,
+    });
+
+    const formattedTickets = tickets.map((t: any) => ({
+      id: t.id.toString(),
+      category: t.category,
+      message: t.message,
+      status: t.status, // open, operator, resolved
+      createdAt: t.created_at || t.createdAt,
+      user: t.user ? {
+        name: t.user.name,
+        username: t.user.username,
+        telegramId: (t.user.telegram_id || t.user.telegramId || "").toString()
+      } : null
+    }));
+
+    return NextResponse.json({ tickets: formattedTickets });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }

@@ -29,7 +29,9 @@ interface VerifyResult {
 }
 
 // Максимальный возраст auth_date (секунды). Подпись старше — отклоняем.
-const MAX_AUTH_AGE_SEC = 60 * 60; // 1 час
+// 24 часа: миниапп может быть открыт долго; initData перевыпускается Telegram
+// при каждом новом открытии, но 1 часа не хватало — сессия отваливалась.
+const MAX_AUTH_AGE_SEC = 60 * 60 * 24; // 24 часа
 
 function safeEqualHex(a: string, b: string): boolean {
   const ba = Buffer.from(a, "hex");

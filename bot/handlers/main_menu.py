@@ -17,7 +17,7 @@ from texts import (
     faq_delivery, faq_returns, faq_sizes, faq_payment, faq_quality,
     faq_contact, order_cmd,
 )
-from keyboards import main_kb, info_kb, support_kb, back_kb
+from keyboards import main_kb, faq_menu_kb, faq_article_kb, support_kb, back_kb, FAQ_ITEMS
 
 router = Router()
 
@@ -94,9 +94,18 @@ async def on_back(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-@router.callback_query(F.data == "menu:info")
-async def on_info(callback: CallbackQuery):
-    await _edit(callback, "info", info_menu(), info_kb())
+@router.callback_query(F.data == "menu:faq")
+async def on_faq_menu(callback: CallbackQuery):
+    """Главное меню FAQ — список статей."""
+    text = (
+        "\U0001F4CB  <b>FAQ — Частые вопросы</b>\n\n"
+        "Выбери тему или пролистывай стрелками внутри статьи:\n\n"
+        + "\n".join(
+            f"{icon}  <b>{label}</b>"
+            for icon, label, _ in FAQ_ITEMS
+        )
+    )
+    await _edit(callback, "info", text, faq_menu_kb())
     await callback.answer()
 
 
@@ -118,30 +127,42 @@ async def on_order(callback: CallbackQuery):
     await callback.answer()
 
 
-# ── FAQ ──
-FAQ = {
+# ── FAQ статьи ──
+# Ключ → (функция-текст, баннер)
+FAQ_HANDLERS: dict[str, tuple] = {
     "delivery": (faq_delivery, "delivery"),
-    "returns":  (faq_returns, "returns"),
-    "sizes":    (faq_sizes, "sizes"),
-    "payment":  (faq_payment, "payment"),
-    "quality":  (faq_quality, "quality"),
-    "contact":  (faq_contact, "contact"),
+    "returns":  (faq_returns,  "returns"),
+    "sizes":    (faq_sizes,    "sizes"),
+    "payment":  (faq_payment,  "payment"),
+    "quality":  (faq_quality,  "quality"),
+    "contact":  (faq_contact,  "contact"),
+    "brand":    (lambda: (
+        "\U0001F319  <b>SOULDAWN — Рассвет после боя</b>\n\n"
+        "Мы не придумали эту борьбу. Мы просто решили показать её.\n\n"
+        "SOULDAWN — это спорт. Как характер. Как действие. Как состояние.\n\n"
+        "\U0001F4E6  Коллекция «Ангел vs Демон» — 4 принта, каждый рассказывает историю.\n"
+        "\U0001F319  Дихотомия тёмного/светлого = Демон/Ангел.\n"
+        "\U0001F305  Рассвет после боя — наш слоган."
+    ), "info"),
+    "site": (lambda: (
+        f"\U0001F310  <b>Наш сайт</b>\n\n"
+        f"Полный каталог, оформление заказа и личный кабинет — на сайте.\n\n"
+        f"\U0001F517  <a href='{SITE_URL}'>{SITE_URL}</a>\n\n"
+        f"\U0001F6CD\uFE0F  Каталог: <a href='{SITE_URL}/collection'>{SITE_URL}/collection</a>\n"
+        f"\U0001F464  Личный кабинет: <a href='{SITE_URL}/dashboard'>{SITE_URL}/dashboard</a>"
+    ), "links"),
 }
 
 
 @router.callback_query(F.data.startswith("faq:"))
 async def on_faq(callback: CallbackQuery):
     key = callback.data.split(":", 1)[1]
-    entry = FAQ.get(key)
+    entry = FAQ_HANDLERS.get(key)
     if not entry:
         await callback.answer()
         return
-    fn, bk = entry
-    parent = "menu:support" if key == "contact" else "menu:info"
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="←  Назад", callback_data=parent)]
-    ])
-    await _edit(callback, bk, fn(), kb)
+    fn, banner = entry
+    await _edit(callback, banner, fn(), faq_article_kb(key))
     await callback.answer()
 
 

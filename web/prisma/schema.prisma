@@ -178,7 +178,6 @@ model PromoCode {
 }
 
 // ContactLink — редактируемые ссылки/контакты (футер сайта + мини-апп).
-// key — стабильный идентификатор (instagram, telegram, support, ...).
 model ContactLink {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   key       String   @unique
@@ -191,4 +190,46 @@ model ContactLink {
 
   @@index([isActive, sortOrder])
   @@map("contact_links")
+}
+
+// ─── Уведомления (push-центр) ────────────────────────────────────
+// type: "welcome" | "promo" | "order" | "support" | "payment" | "system"
+// audience: "user" | "admin" | "all"
+// telegramId — получатель (null = broadcast всем нужной аудитории)
+// read — прочитано ли (для значка на колокольчике)
+model Notification {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type       String    @default("system")
+  audience   String    @default("user")
+  telegramId BigInt?   @map("telegram_id")
+  title      String    @default("")
+  body       String    @default("")
+  meta       Json?     // доп. данные: orderId, ticketId, promoCode и т.д.
+  read       Boolean   @default(false)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@index([telegramId, read])
+  @@index([audience, read])
+  @@map("notifications")
+}
+
+// ─── Отзывы (кэш из Telegram-группы) ────────────────────────────
+// Хранит распарсенные сообщения из публичной группы отзывов.
+// mediaType: "none" | "photo" | "video"
+// mediaUrl — прямая ссылка на файл (через Bot API getFile)
+model Review {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tgMessageId Int     @unique @map("tg_message_id")
+  author     String   @default("Покупатель")
+  username   String?  @default("")
+  text       String   @default("")
+  rating     Int?     // 1-5
+  mediaType  String   @default("none") @map("media_type")
+  mediaUrl   String?  @map("media_url")
+  mediaThumb String?  @map("media_thumb")
+  tgDate     Int      @map("tg_date")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@index([tgDate])
+  @@map("reviews")
 }

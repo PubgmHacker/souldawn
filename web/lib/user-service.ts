@@ -187,6 +187,22 @@ export async function linkOrCreateUser(
       },
     },
   });
+
+  // Системное уведомление админам о новой регистрации
+  try {
+    const { createNotification } = await import("@/lib/notify");
+    const displayName = profile.fullName || profile.username || profile.email || "—";
+    const tgId = profile.telegramId ? Number(profile.telegramId) : undefined;
+    const uname = profile.username ? `@${profile.username}` : (profile.email || "—");
+    await createNotification({
+      type: "system",
+      audience: "admin",
+      title: `🌅  Новый пользователь`,
+      body: `${displayName} · ${uname}${tgId ? ` · ID: ${tgId}` : ""} — вошёл через ${provider}`,
+      meta: { userId: user.id, provider, telegramId: tgId, username: profile.username },
+    });
+  } catch {}
+
   return toPublicUser(user);
 }
 

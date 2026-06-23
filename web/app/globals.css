@@ -2,11 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Шрифты загружаются через next/font в layout.tsx (var(--font-sans), var(--font-display)).
+   Дублирующий @import оставлен как fallback для не-Next сред (storyboards и т.п.). */
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 :root {
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-display: 'Space Grotesk', 'Inter', sans-serif;
+  --font-mono: 'Space Grotesk', ui-monospace, monospace;
+
+  /* Палитра «Рассвет после боя» — синхрон с tailwind.config.ts */
+  --bg: #08080A;
+  --bg-soft: #0C0C0F;
+  --surface: #101014;
+  --surface-hi: #1D1D24;
+  --text: #F2EEE9;
+  --text-dim: #B7B2AC;
+  --muted: #7C7C85;
+  --accent: #E8B87A;
+  --accent-warm: #D4915C;
+  --accent-deep: #A86A3D;
+  --accent-bright: #F5D0A3;
+  --steel: #8A8F98;
+  --line: rgba(242,238,233,0.08);
+  --line-strong: rgba(242,238,233,0.14);
 }
 
 @layer base {
@@ -21,8 +40,8 @@
   }
 
   body {
-    background-color: #070708;
-    color: #F2EEE9;
+    background-color: var(--bg);
+    color: var(--text);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -30,72 +49,123 @@
   }
 
   ::selection {
-    background-color: #C8102E;
-    color: #F2EEE9;
+    background-color: var(--accent);
+    color: var(--bg);
   }
 }
 
 @layer utilities {
   .font-display {
-    font-family: 'Bebas Neue', var(--font-display), 'Oswald', 'Inter', sans-serif;
-    letter-spacing: 0.02em;
+    font-family: var(--font-display), 'Inter', sans-serif;
+    letter-spacing: 0.01em;
   }
-}
 
-@layer components {
-  .text-gradient {
-    background: linear-gradient(120deg, #F2EEE9 0%, #E5E5E5 45%, #C8102E 100%);
+  .font-mono {
+    font-family: var(--font-mono), ui-monospace, monospace;
+  }
+
+  /* —— Металлический текст (янтарный блик, как шлифованная сталь на рассвете) —— */
+  .metal-text {
+    background: linear-gradient(
+      100deg,
+      #B7B2AC 0%,
+      #F2EEE9 25%,
+      #F5D0A3 45%,
+      #E8B87A 55%,
+      #D4915C 70%,
+      #F2EEE9 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 6s linear infinite;
+  }
+
+  /* —— Контрастный градиентный текст «Рассвет» —— */
+  .dawn-text {
+    background: linear-gradient(180deg, #F5D0A3 0%, #E8B87A 45%, #D4915C 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
+  /* —— Стальной текст (холодный блик) —— */
+  .steel-text {
+    background: linear-gradient(120deg, #54575E 0%, #8A8F98 50%, #B7B2AC 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Магнитный элемент-обёртка (для magnetic-кнопок/ссылок) */
+  .magnetic {
+    will-change: transform;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Скрываем стандартный курсор когда активен кастомный */
+  .cursor-none-custom,
+  .cursor-none-custom * {
+    cursor: none !important;
+  }
+}
+
+@layer components {
+  .text-gradient {
+    background: linear-gradient(120deg, #F2EEE9 0%, #F5D0A3 50%, #E8B87A 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* —— Главный фон «Рассвет»: янтарная радировка снизу + графит —— */
   .dawn-gradient {
     background:
-      radial-gradient(120% 90% at 50% 100%, rgba(200,16,46,0.14) 0%, transparent 60%),
-      linear-gradient(180deg, #070708 0%, #0B0B0D 50%, #070708 100%);
+      radial-gradient(120% 90% at 50% 100%, rgba(232,184,122,0.16) 0%, rgba(168,106,61,0.05) 35%, transparent 70%),
+      linear-gradient(180deg, #08080A 0%, #0C0C0F 50%, #08080A 100%);
     background-size: 100% 200%;
   }
 
-  /* —— Glassmorphism (Argus-style панели) —— */
+  /* —— Glassmorphism (янтарный отлив) —— */
   .glass {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.07);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    background: rgba(242,238,233,0.035);
+    border: 1px solid rgba(242,238,233,0.08);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
   }
 
   .glass-strong {
-    background: rgba(15,15,17,0.6);
-    border: 1px solid rgba(255,255,255,0.08);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: rgba(16,16,20,0.7);
+    border: 1px solid rgba(242,238,233,0.10);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
   }
 
   /* —— 3D / глубина —— */
   .perspective {
-    perspective: 1200px;
+    perspective: 1400px;
   }
 
   .preserve-3d {
     transform-style: preserve-3d;
   }
 
-  /* Неон-сфера (3D glow orb) */
+  /* Рассветная сфера (glow orb) */
   .orb {
     border-radius: 9999px;
-    filter: blur(60px);
+    filter: blur(70px);
     will-change: transform;
   }
 
-  /* —— Гранулярный шум и виньетка —— */
+  /* —— Гранулярный шум (плёночное зерно) —— */
   .grain::before {
     content: '';
     position: fixed;
-    inset: 0;
+    inset: -10%;
     z-index: 60;
     pointer-events: none;
-    opacity: 0.05;
+    opacity: 0.045;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
@@ -105,16 +175,16 @@
     inset: 0;
     z-index: 55;
     pointer-events: none;
-    background: radial-gradient(120% 120% at 50% 50%, transparent 60%, rgba(0,0,0,0.55) 100%);
+    background: radial-gradient(120% 120% at 50% 50%, transparent 55%, rgba(0,0,0,0.6) 100%);
   }
 
   .hover-lift {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s ease;
   }
 
   .hover-lift:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(200, 16, 46, 0.18);
+    transform: translateY(-5px);
+    box-shadow: 0 18px 50px rgba(232,184,122,0.18);
   }
 
   .border-accent-hover {
@@ -128,33 +198,74 @@
     left: 0;
     width: 0;
     height: 2px;
-    background: #C8102E;
-    transition: width 0.3s ease;
+    background: linear-gradient(90deg, #E8B87A, #D4915C);
+    transition: width 0.35s cubic-bezier(0.16,1,0.3,1);
   }
 
   .border-accent-hover:hover::after {
     width: 100%;
   }
 
+  /* —— Кнопки —— */
   .btn-primary {
-    @apply inline-flex items-center justify-center px-8 py-3 bg-accent text-bg font-bold text-sm tracking-widest uppercase transition-all duration-300;
+    @apply inline-flex items-center justify-center px-8 py-3.5 font-bold text-sm tracking-widest uppercase transition-all duration-300;
+    background: linear-gradient(120deg, #F5D0A3 0%, #E8B87A 45%, #D4915C 100%);
+    color: #08080A;
+    box-shadow: 0 0 0 0 rgba(232,184,122,0);
   }
 
   .btn-primary:hover {
-    @apply bg-white text-bg;
-    transform: translateY(-1px);
+    background: linear-gradient(120deg, #F5D0A3 0%, #F5D0A3 100%);
+    color: #08080A;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(232,184,122,0.35);
   }
 
   .btn-outline {
-    @apply inline-flex items-center justify-center px-8 py-3 border border-muted text-text font-bold text-sm tracking-widest uppercase transition-all duration-300;
+    @apply inline-flex items-center justify-center px-8 py-3.5 border font-bold text-sm tracking-widest uppercase transition-all duration-300;
+    border-color: var(--line-strong);
+    color: var(--text);
   }
 
   .btn-outline:hover {
-    @apply border-accent text-accent;
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  /* Призрачная кнопка (минималистичная, чисто текст) */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center px-5 py-2.5 font-semibold text-xs tracking-widest uppercase transition-all duration-300;
+    color: var(--text-dim);
+  }
+
+  .btn-ghost:hover {
+    color: var(--accent);
   }
 
   .section-padding {
     @apply px-6 md:px-12 lg:px-24 py-20 md:py-32;
+  }
+
+  /* Карточка-«слиток»: графит + тонкая янтарная грань сверху */
+  .ingot {
+    @apply relative overflow-hidden;
+    background: linear-gradient(180deg, #14141A 0%, #101014 100%);
+    border: 1px solid var(--line);
+  }
+
+  .ingot::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(232,184,122,0.5), transparent);
+  }
+
+  /* Hairline-разделитель с янтарным центром */
+  .divider-dawn {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line-strong) 20%, rgba(232,184,122,0.4) 50%, var(--line-strong) 80%, transparent);
   }
 }
 
@@ -163,8 +274,8 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.12);
-  border-top-color: #C8102E;
+  border: 2px solid rgba(242,238,233,0.12);
+  border-top-color: #E8B87A;
   animation: sdSpin 0.8s linear infinite;
 }
 
@@ -174,20 +285,60 @@
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #070708;
+  background: #08080A;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2a2a30;
-  border-radius: 3px;
+  background: #24242C;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #C8102E;
+  background: #A86A3D;
+}
+
+/* ===== Кастомный курсор ===== */
+.sd-cursor-dot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #F5D0A3;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  mix-blend-mode: difference;
+}
+
+.sd-cursor-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(232,184,122,0.5);
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease, height 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+}
+
+.sd-cursor-ring.is-hovering {
+  width: 64px;
+  height: 64px;
+  border-color: rgba(232,184,122,0.9);
+  background: rgba(232,184,122,0.08);
+}
+
+@media (hover: none), (pointer: coarse) {
+  .sd-cursor-dot, .sd-cursor-ring { display: none !important; }
 }
 
 /* ===== Support Chat Widget ===== */
@@ -199,4 +350,14 @@
 @keyframes sdPulse {
   0%, 100% { transform: scale(1); opacity: 0.4; }
   50%      { transform: scale(1.25); opacity: 0; }
+}
+
+/* Reduced motion: отключаем тяжёлые анимации */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

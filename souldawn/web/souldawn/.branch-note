@@ -1,5 +1,0 @@
-Working branch for the SOULDAWN monorepo modernization (Phases 1-7).
-Replaces feat/phase-1-prisma to avoid slash-in-branch URL issues.
-
-CI: build/lint web + smoke-check bot (see .gitlab-ci.yml).
-CI/CD feature enabled.

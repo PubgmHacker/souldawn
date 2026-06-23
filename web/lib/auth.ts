@@ -98,3 +98,31 @@ export function isAdminRole(role: string): boolean {
 export function isOwnerRole(role: string): boolean {
   return role === "owner";
 }
+
+// ─── Серверный хелпер: получить текущего пользователя из запроса ───
+import { NextRequest } from "next/server";
+
+export interface AuthUser {
+  userId: string;
+  telegramId?: bigint;
+  role: string;
+  isAdmin: boolean;
+}
+
+export async function getAuthUser(request: NextRequest): Promise<AuthUser | null> {
+  const cookieToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value || "";
+  const authHeader  = request.headers.get("authorization") || "";
+  const bearer      = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+  const token       = bearer || cookieToken;
+  if (!token) return null;
+
+  const payload = verifyToken(token);
+  if (!payload?.userId) return null;
+
+  return {
+    userId:     payload.userId,
+    telegramId: payload.telegram_id ? BigInt(payload.telegram_id) : undefined,
+    role:       payload.role || "user",
+    isAdmin:    isAdminRole(payload.role),
+  };
+}

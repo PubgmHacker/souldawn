@@ -3,6 +3,7 @@ import Marquee from "@/components/Marquee";
 import ScrollCarousel from "@/components/ScrollCarousel";
 import Lookbook from "@/components/Lookbook";
 import BrandPhilosophy from "@/components/BrandPhilosophy";
+import Reviews from "@/components/Reviews";
 import Newsletter from "@/components/Newsletter";
 import SoundToggle from "@/components/SoundToggle";
 
@@ -14,6 +15,7 @@ export default function Home() {
       <ScrollCarousel />
       <Lookbook />
       <BrandPhilosophy />
+      <Reviews />
       <Newsletter />
       <SoundToggle />
     </>

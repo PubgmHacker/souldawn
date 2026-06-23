@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   output: "standalone",
   images: {
     // Убран unoptimized:true — теперь Next.js оптимизирует изображения

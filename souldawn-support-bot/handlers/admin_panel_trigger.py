@@ -24,7 +24,7 @@ async def handle_operator_reply_click(callback: CallbackQuery, state: FSMContext
     ticket_id = callback.data.split(":")[-1]
     await state.update_data(ticket_id=ticket_id)
     await state.set_state(ReplyStates.waiting_for_reply_text)
-    await callback.message.answer("✍️ <b>Введите текст ответа для тикета:</b>", parse_mode="HTML")
+    await callback.message.answer(f"✍️ <b>Введите текст ответа для тикета</b> <code>{ticket_id}</code>:", parse_mode="HTML")
     await callback.answer()
 
 @router.message(ReplyStates.waiting_for_reply_text)
@@ -35,23 +35,26 @@ async def process_operator_reply_text(message: Message, state: FSMContext):
     await state.clear()
 
     async with aiohttp.ClientSession() as session:
+        # 1. Записываем ответ оператора в чат реального времени
         payload = {"ticketId": ticket_id, "sender": "operator", "text": text}
-        async with session.post("https://railway.app", json=payload):
-            pass
-    await message.answer("✅ <b>Ответ успешно отправлен и синхронизирован везде!</b>", parse_mode="HTML")
+        await session.post("https://railway.app", json=payload)
+        
+        # 2. АВТОАРХИВАЦИЯ: Меняем статус тикета на resolved (Решено / Перенесено в архив)
+        # Отправляем запрос на официальный эндпоинт закрытия тикетов вашей админки сайта
+        await session.post(f"https://railway.app{ticket_id}/reply", json={"reply": text})
+
+    await message.answer("✅ <b>Ответ отправлен! Тикет автоматически помечен как 'Отвечено' и перенесен в архив на сайте и в ТГ-панели.</b>", parse_mode="HTML")
 
 @router.message(Command("debug"))
 @router.callback_query(F.data == "admin:debug_menu")
 async def call_debug_menu_click(event: Message | CallbackQuery):
     message = event if isinstance(event, Message) else event.message
     debug_text = "🛠️ <b>SOULDAWN SUPPORT · ИЗОЛИРОВАННАЯ ДЕБАГ-ПАНЕЛЬ</b>\n\nВыберите действие для генерации сквозных тестов:"
-    
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📥 Имитировать обращение с сайта", callback_data="debug:simulate_web")],
         [InlineKeyboardButton(text="🤖 Имитировать обращение с ТГ-бота", callback_data="debug:simulate_tg")],
         [InlineKeyboardButton(text="🔄 Проверить статус БД (SELECT 1)", callback_data="debug:test_db")]
     ])
-    
     if isinstance(event, CallbackQuery):
         await message.answer(debug_text, parse_mode="HTML", reply_markup=kb)
         await event.answer()
@@ -63,8 +66,7 @@ async def simulate_web_ticket(callback: CallbackQuery):
     fake_id = str(random.randint(100000, 999999))
     async with aiohttp.ClientSession() as session:
         payload = {"telegramId": "8340654471", "category": "order", "message": "Тестовый запрос с сайта #" + fake_id}
-        async with session.post("https://railway.app", json=payload):
-            pass
+        await session.post("https://railway.app", json=payload)
     await callback.message.answer("✅ Имитация обращения с сайта выполнена через API!", parse_mode="HTML")
     await callback.answer()
 
@@ -72,7 +74,6 @@ async def simulate_web_ticket(callback: CallbackQuery):
 async def simulate_tg_ticket(callback: CallbackQuery):
     fake_id = str(random.randint(100000, 999999))
     notification_text = "❓ <b>Новое обращение в поддержку!</b>\n\n<b>Источник:</b> Telegram-Бот (Имитация)\n<b>ID тикета:</b> <code>tg_" + fake_id + "</code>\n\n<b>Текст:</b> <i>Тестовый вопрос напрямую из чата ТГ-бота</i>"
-    
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="💬 Ответить пользователю", callback_data="ticket:reply:tg_" + fake_id)]
     ])

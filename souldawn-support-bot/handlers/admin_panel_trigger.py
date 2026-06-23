@@ -11,15 +11,17 @@ router = Router()
 class ReplyStates(StatesGroup):
     waiting_for_reply_text = State()
 
+# ── КОМАНДА /admin С ИСПРАВЛЕННОЙ ССЫЛКОЙ НА ВЕБ ──
 @router.message(Command("admin"))
 async def open_admin_panel_support(message: Message):
+    # Используем ваш официальный домен веба Next.js на Railway с добавлением подпапки /admin
     admin_url = "https://railway.app"
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="⚙️ Открыть Панель Ответов (Mini App)", web_app=WebAppInfo(url=admin_url))]
+        [InlineKeyboardButton(text="⚙️ Панель Управления (Mini App)", web_app=WebAppInfo(url=admin_url))]
     ])
     await message.answer("🖥️ <b>SOULDAWN SUPPORT — Панель оператора тикетов:</b>", parse_mode="HTML", reply_markup=kb)
 
-# ── ОТВЕТ ОПЕРАТОРА ──
+# ── ОТВЕТ ОПЕРАТОРА ПОЛЬЗОВАТЕЛЮ ──
 @router.callback_query(F.data.startswith("ticket:reply:"))
 async def handle_operator_reply_click(callback: CallbackQuery, state: FSMContext):
     ticket_id = callback.data.split(":")[-1]
@@ -39,15 +41,15 @@ async def process_operator_reply_text(message: Message, state: FSMContext):
         payload = {"ticketId": ticket_id, "sender": "operator", "text": text}
         async with session.post("https://railway.app", json=payload):
             pass
-    await message.answer("✅ <b>Ответ успешно отправлен и синхронизирован!</b>", parse_mode="HTML")
+    await message.answer("✅ <b>Ответ успешно отправлен и синхронизирован везде!</b>", parse_mode="HTML")
 
-# ── ПОЛНОЕ ИСПРАВЛЕННОЕ ДЕБАГ-МЕНЮ (КОМАНДА /debug И КНОПКА) ──
+# ── ПОЛНОЕ ИСПРАВЛЕННОЕ ДЕБАГ-МЕНЮ (СТРОГО 3 КНОПКИ) ──
 @router.message(Command("debug"))
 @router.callback_query(F.data == "admin:debug_menu")
 async def call_debug_menu_click(event: Message | CallbackQuery):
     message = event if isinstance(event, Message) else event.message
     debug_text = (
-        "🛠️ <b>SOULDAWN SUPPORT · ДЕБАГ-ПАНЕЛЬ</b>\n\n"
+        "🛠️ <b>SOULDAWN SUPPORT · ИЗОЛИРОВАННАЯ ДЕБАГ-ПАНЕЛЬ</b>\n\n"
         "Выберите действие для генерации сквозных тестов:"
     )
     kb = InlineKeyboardMarkup(inline_keyboard=[

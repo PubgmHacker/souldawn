@@ -16,7 +16,7 @@ TG_LOGIN_BOT_TOKEN = os.getenv("TG_LOGIN_BOT_TOKEN", BOT_TOKEN)
 # ВАЖНО: после Фазы 2 сессиями владеет Next.js (web/) — этот ключ нужен только боту,
 # пока какие-то его эндпоинты выпускают/проверяют JWT.
 JWT_SECRET_KEY = hashlib.sha256(TG_LOGIN_BOT_TOKEN.encode("utf-8")).digest() if TG_LOGIN_BOT_TOKEN else b""
-MINIAPP_URL = os.getenv("MINIAPP_URL", "")
+MINIAPP_URL = os.getenv("MINIAPP_URL", "https://souldawn-web-production.up.railway.app/")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "")

@@ -725,6 +725,7 @@ function CardKPI({ label, value, pct, accent }: { label: string; value: string; 
   );
 }
 
+/* Дубликат удален автоматически
 function GrowthBadge({ pct }: { pct?: number }) {
   if (pct === undefined || pct === null) return null;
   const up = pct >= 0;
@@ -736,3 +737,4 @@ function GrowthBadge({ pct }: { pct?: number }) {
     </span>
   );
 }
+*/

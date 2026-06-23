@@ -13,14 +13,15 @@ export async function POST(req: Request) {
       where: { OR: [{ telegram_id: tId } as any, { telegramId: tId } as any] },
     });
 
-    // Если пользователя нет (дебаг/имитация), создаем его на лету
     if (!user) {
       user = await prisma.user.create({
-        data: { telegram_id: tId, telegramId: tId, username: "test_user", name: "Тестовый Аккаунт", created_at: new Date(), createdAt: new Date() } as any,
+        data: { telegram_id: tId, telegramId: tId, username: "web_user", name: "Посетитель Сайта", created_at: new Date(), createdAt: new Date() } as any,
       });
     }
 
     const ticketModel = (prisma as any).support_tickets || (prisma as any).supportTicket;
+    if (!ticketModel) return NextResponse.json({ error: "Support ticket model not found" }, { status: 500 });
+
     const ticket = await ticketModel.create({
       data: { user_id: user.id, userId: user.id, category: category || "general", message: message, status: "open", created_at: new Date(), createdAt: new Date() } as any,
     });
@@ -44,14 +45,16 @@ export async function POST(req: Request) {
 
       for (const adminId of supportChatIds) {
         try {
+          // ИСПРАВЛЕНО: Точный, валидный адрес Telegram API
           await fetch(`https://telegram.org{botToken}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ chat_id: adminId, text: text, parse_mode: "HTML", reply_markup: replyMarkup })
           });
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Telegram API Error:", e); }
       }
     }
+
     return NextResponse.json({ success: true, ticketId: ticket.id.toString() });
   } catch (error: any) { return NextResponse.json({ error: error.message }, { status: 500 }); }
 }

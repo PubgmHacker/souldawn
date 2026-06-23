@@ -1,33 +1,27 @@
-/** @type {import('next').NextConfig} */
+/** @type {next.NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  output: "standalone",
+  reactStrictMode: false,
   images: {
-    // Убран unoptimized:true — теперь Next.js оптимизирует изображения
-    remotePatterns: [
-      // Telegram CDN (аватары, фото из Telegram Login Widget)
-      {
-        protocol: "https",
-        hostname: "t.me",
-      },
-      {
-        protocol: "https",
-        hostname: "cdn4.telegram.org",
-      },
-      {
-        protocol: "https",
-        hostname: "cdn5.telegram.org",
-      },
-      // Telegram user photos (t.me/i/userpic/...)
-      {
-        protocol: "https",
-        hostname: "*.telegram.org",
-      },
-    ],
-    // Форматы для современных браузеров
-    formats: ["image/avif", "image/webp"],
+    unoptimized: true,
   },
+  async headers() {
+    return [
+      {
+        // Разрешаем Telegram открывать страницы админки и поддержки во фреймах Mini App
+        source: "/(admin|support)(.*)",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: "frame-ancestors https://*.telegram.org https://telegram.org http://localhost:*;"
+          },
+          {
+            key: "X-Frame-Options",
+            value: "ALLOWALL"
+          }
+        ]
+      }
+    ];
+  }
 };
+
 export default nextConfig;

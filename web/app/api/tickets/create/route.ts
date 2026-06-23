@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     const strId = String(telegramId);
     const numId = Number(telegramId);
 
-    // Ищем пользователя по строке или числу, полностью исключая падение BigInt
+    // Безопасный поиск по реальной схеме Prisma
     let user = await prisma.user.findFirst({
       where: {
         OR: [
@@ -24,7 +24,6 @@ export async function POST(req: Request) {
       },
     });
 
-    // Если пользователя нет, регистрируем его по вашей точной схеме (поля fullName, email, isActive)
     if (!user) {
       user = await prisma.user.create({
         data: {
@@ -65,8 +64,8 @@ export async function POST(req: Request) {
       }).catch(() => {});
     }
 
-    // Рассылка операторам в ТГ
-    const botToken = process.env.BOT_TOKEN;
+    // ЧИТАЕМ СТРОГО ИЗОЛИРОВАННЫЙ ТОКЕН ПОДДЕРЖКИ
+    const botToken = process.env.SUPPORT_BOT_TOKEN;
     const rawSupportIds = process.env.SUPPORT_CHAT_ID || "8340654471";
     const supportChatIds = rawSupportIds.split(",").map(id => id.trim());
 

@@ -17,7 +17,7 @@ from texts import (
     faq_delivery, faq_returns, faq_sizes, faq_payment, faq_quality,
     faq_contact, order_cmd,
 )
-from keyboards import main_kb, faq_menu_kb, faq_article_kb, support_kb, back_kb, FAQ_ITEMS
+from keyboards import info_kb, main_kb, faq_menu_kb, faq_article_kb, support_kb, back_kb, FAQ_ITEMS
 
 router = Router()
 

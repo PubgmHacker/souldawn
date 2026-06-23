@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
-// Глобальный патч для сериализации BigInt в JSON
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
 };
@@ -13,41 +12,32 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const telegramId = searchParams.get("telegramId");
 
-    if (!telegramId) {
-      return NextResponse.json({ tickets: [] });
-    }
+    if (!telegramId) return NextResponse.json({ tickets: [] });
 
-    let user = null;
-    try {
-      user = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { telegram_id: BigInt(telegramId) } as any,
-            { telegramId: BigInt(telegramId) } as any
-          ]
-        },
-      });
-    } catch (dbErr) {
-      console.error("Database query failed:", dbErr);
-      return NextResponse.json({ tickets: [], status: "db_offline" });
-    }
+    const numId = Number(telegramId);
+    const strId = String(telegramId);
+    let bigId = null;
+    try { bigId = BigInt(telegramId); } catch (_) {}
 
-    if (!user) {
-      return NextResponse.json({ tickets: [] });
-    }
-
-    const ticketModel = (prisma as any).support_tickets || (prisma as any).supportTicket;
-    if (!ticketModel) {
-      return NextResponse.json({ tickets: [] });
-    }
-
-    const tickets = await ticketModel.findMany({
+    let user = await prisma.user.findFirst({
       where: {
         OR: [
-          { user_id: user.id } as any,
-          { userId: user.id } as any
+          { telegram_id: numId } as any,
+          { telegram_id: strId } as any,
+          { telegramId: numId } as any,
+          { telegramId: strId } as any,
+          ...(bigId ? [{ telegram_id: bigId } as any, { telegramId: bigId } as any] : [])
         ]
       },
+    });
+
+    if (!user) return NextResponse.json({ tickets: [] });
+
+    const ticketModel = (prisma as any).support_tickets || (prisma as any).supportTicket;
+    if (!ticketModel) return NextResponse.json({ tickets: [] });
+
+    const tickets = await ticketModel.findMany({
+      where: { OR: [{ user_id: user.id } as any, { userId: user.id } as any] },
       orderBy: { created_at: "desc" } as any,
     });
 

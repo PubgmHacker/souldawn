@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Фон: глубокий графит -->
+  <rect width="32" height="32" fill="#08080A"/>
+  <!-- Янтарный акцент — монограмма SD -->
+  <text x="2" y="22"
+    font-family="Arial Black, sans-serif"
+    font-weight="900"
+    font-size="14"
+    fill="#E8B87A"
+    letter-spacing="-1">SD</text>
+</svg>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
+// Глобальный патч для сериализации BigInt в JSON
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
 };
@@ -12,6 +13,7 @@ export async function POST(req: Request) {
     const { telegramId, category, message } = await req.json();
     if (!telegramId || !message) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
+    // Преобразуем входящий ID во все возможные типы для безопасного поиска
     const numId = Number(telegramId);
     const strId = String(telegramId);
     let bigId = null;

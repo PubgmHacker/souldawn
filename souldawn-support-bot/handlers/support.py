@@ -1,4 +1,4 @@
-"""SOULDAWN Support Bot — AI Assistant with custom /start welcome menu."""
+"""SOULDAWN Support Bot — High Availability AI Assistant."""
 from __future__ import annotations
 import asyncio
 import logging
@@ -7,26 +7,27 @@ from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, W
 from aiogram.filters import CommandStart
 from openai import AsyncOpenAI
 
-from config import OPENAI_API_KEY, OPENAI_BASE_URL, SUPPORT_CHAT_IDS
+from config import OPENAI_API_KEY, SUPPORT_CHAT_IDS, SUPPORT_MINIAPP_URL
 
 router = Router()
 logger = logging.getLogger("SOULDAWN.support")
 
-openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL)
+# Жестко страхуем URL OpenRouter, чтобы исключить ошибки переменных окружения
+base_url = "https://openrouter.ai"
+openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY, base_url=base_url)
 
 SYSTEM_PROMPT = """Ты — ИИ-ассистент поддержки бренда уличной одежды SOULDAWN.
 Помогай клиентам отвечать на вопросы о заказах, качестве вещей, доставке.
 Отвечай вежливо, лаконично и стильно.
 ⚠️ ВАЖНО: Если пользователь просит позвать человека, требует оператора, хочет оформить возврат или ты не знаешь ответ — напиши строго одну фразу: '[OPERATOR]' и абсолютно ничего больше."""
 
-# Список бесплатных моделей на OpenRouter
+# Топ самых стабильных БЕСПЛАТНЫХ моделей на OpenRouter (Gemini Flash на первом месте)
 MODELS_TO_TRY = [
+    "google/gemini-2.5-flash:free",
     "meta-llama/llama-3-8b-instruct:free",
-    "microsoft/phi-3-mini-128k-instruct:free",
     "qwen/qwen-2-7b-instruct:free"
 ]
 
-# ── ХЕНДЛЕР НА /start (ИИ СЮДА НЕ ЛЕЗЕТ) ──
 @router.message(CommandStart())
 async def cmd_start_support(message: Message):
     welcome_text = (
@@ -35,8 +36,6 @@ async def cmd_start_support(message: Message):
         "Если ваш вопрос сложный или вы хотите пообщаться с человеком, просто откройте окно поддержки ниже или напишите свой вопрос в чат."
     )
     
-    from config import SUPPORT_MINIAPP_URL
-    
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📱 Открыть окно поддержки", web_app=WebAppInfo(url=SUPPORT_MINIAPP_URL))],
         [InlineKeyboardButton(text="💬 Позвать оператора в чат", callback_data="ticket:call_operator")]
@@ -44,8 +43,6 @@ async def cmd_start_support(message: Message):
     
     await message.answer(welcome_text, parse_mode="HTML", reply_markup=kb)
 
-
-# ── ХЕНДЛЕР НА СЛУЧАЙ НАЖАТИЯ КНОПКИ «ПОЗВАТЬ ОПЕРАТОРА» ──
 @router.callback_query(F.data == "ticket:call_operator")
 async def call_operator_callback(callback, bot: Bot):
     await callback.message.answer("🔄 Вызываю живого оператора. Пожалуйста, опишите вашу проблему, мы уже бежим на помощь!")
@@ -57,8 +54,6 @@ async def call_operator_callback(callback, bot: Bot):
     await forward_to_operators(fake_message, bot, ai_answer="Пользователь сразу запросил человека через кнопку.")
     await callback.answer()
 
-
-# ── ХЕНДЛЕР НА ОБЫЧНЫЙ ТЕКСТ (ТУТ РАБОТАЕТ ИИ) ──
 @router.message(F.text & ~F.text.startswith("/"))
 async def handle_support_message(message: Message, bot: Bot):
     if not OPENAI_API_KEY:
@@ -66,6 +61,7 @@ async def handle_support_message(message: Message, bot: Bot):
         return
 
     ai_answer = None
+    
     for model_name in MODELS_TO_TRY:
         try:
             response = await openai_client.chat.completions.create(
@@ -74,13 +70,13 @@ async def handle_support_message(message: Message, bot: Bot):
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": message.text}
                 ],
-                timeout=7.0
+                timeout=8.0
             )
             ai_answer = response.choices.message.content.strip()
             if ai_answer:
                 break
         except Exception as e:
-            logger.warning(f"Model {model_name} failed: {e}. Trying next...")
+            logger.warning(f"Model {model_name} connection error: {e}")
             continue
 
     if not ai_answer:

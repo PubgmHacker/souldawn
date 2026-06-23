@@ -16,7 +16,7 @@ from aiogram.fsm.context import FSMContext
 
 from config import (
     BOT_TOKEN, OPENAI_API_KEY, OPENAI_MODEL, OPENAI_BASE_URL,
-    YOOKASSA_SHOP_ID, YOOKASSA_SECRET_KEY, SUPPORT_CHAT_ID, MINIAPP_URL,
+    YOOKASSA_SHOP_ID, YOOKASSA_SECRET_KEY, SUPPORT_CHAT_IDS, MINIAPP_URL,
     WEBHOOK_SECRET, PRODUCT_PRICES_KOPECKS, PROMO_CODES,
 )
 from database import (
@@ -74,7 +74,7 @@ async def poll_paid_orders(bot: Bot) -> None:
                     lines.append(f"{i}. {nm} x{qty}")
                 try:
                     await bot.send_message(
-                        SUPPORT_CHAT_ID,
+                        SUPPORT_CHAT_IDS,
                         f"SOULDAWN · Оплаченный заказ #{order_id[:8]}\n\n"
                         + "\n".join(lines)
                         + f"\n\nСумма: {_fmt_price(total)}\n"
@@ -192,7 +192,7 @@ async def _order_confirmed(bot: Bot, callback_or_message, order: dict) -> None:
     if SUPPORT_CHAT_ID:
         try:
             await bot.send_message(
-                SUPPORT_CHAT_ID,
+                SUPPORT_CHAT_IDS,
                 order_text,
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
                     InlineKeyboardButton(text="REPLY", url=f"tg://user?id={user_id}")
@@ -361,7 +361,7 @@ async def handle_webapp(message: Message, state: FSMContext, bot: Bot):
     if SUPPORT_CHAT_ID:
         try:
             await bot.send_message(
-                SUPPORT_CHAT_ID,
+                SUPPORT_CHAT_IDS,
                 f"SOULDAWN · New order (pending payment)\n\n"
                 f"Buyer: {display_name} · ID: {user.id}\n"
                 f"Username: {uname}\n"
@@ -401,7 +401,7 @@ async def _send_order_direct(
     if SUPPORT_CHAT_ID:
         try:
             await message.bot.send_message(
-                SUPPORT_CHAT_ID,
+                SUPPORT_CHAT_IDS,
                 order_text,
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
                     InlineKeyboardButton(text="REPLY", url=f"tg://user?id={user.id}")

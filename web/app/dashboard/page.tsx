@@ -136,8 +136,8 @@ export default function DashboardPage() {
     items.forEach((item) => {
       // Создаём минимальный Product-объект для CartContext
       const product = {
-        id:          item.id || item.name,
-        slug:        item.id || item.name,
+        id:          (item as any).id || item.name,
+        slug:        (item as any).id || item.name,
         name:        item.name,
         description: "",
         priceKopecks: item.price,

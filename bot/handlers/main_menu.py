@@ -94,19 +94,16 @@ async def on_back(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-@router.callback_query(F.data == "menu:faq")
+@router.callback_query(F.data.in_({"menu:info", "menu:faq"}))
 async def on_faq_menu(callback: CallbackQuery):
     """Главное меню FAQ — список статей."""
     text = (
-        "\U0001F4CB  <b>FAQ — Частые вопросы</b>\n\n"
-        "Выбери тему или пролистывай стрелками внутри статьи:\n\n"
-        + "\n".join(
-            f"{icon}  <b>{label}</b>"
-            for icon, label, _ in FAQ_ITEMS
-        )
+        "📋  <b>FAQ — Частые вопросы</b>\n\n"
+        "Выберите интересующую вас тему ниже, чтобы узнать подробности:"
     )
-    await _edit(callback, "info", text, faq_menu_kb())
+    await _edit(callback, "info", text, info_kb())
     await callback.answer()
+ы
 
 
 @router.callback_query(F.data == "menu:support")

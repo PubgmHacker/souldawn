@@ -1,238 +1,227 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+
+interface Ticket {
+  id: string;
+  category: string;
+  message: string;
+  status: string;
+  createdAt: string;
+}
+
+interface ChatMessage {
+  id: string;
+  sender: string;
+  message: string;
+  created_at: string;
+}
 
 export default function SupportChat() {
-  const [open, setOpen] = useState(false);
-  const [visible, setVisible] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeTicket, setActiveTicket] = useState<Ticket | null>(null);
+  const [category, setCategory] = useState("general");
+  const [message, setMessage] = useState("");
+  const [chatText, setChatText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  
+  // Для сайта используем фиксированный тестовый ID или ID из сессии (если юзер авторизован)
+  const testTelegramId = "8340654471"; 
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Получение сообщений по открытому тикету
+  const loadMessages = async (ticketId: string) => {
+    try {
+      const res = await fetch(`/api/tickets/messages?ticketId=${ticketId}`);
+      const data = await res.json();
+      if (data.messages) setChatMessages(data.messages);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Проверяем, есть ли уже активный открытый тикет у пользователя при старте
+  const checkActiveTicket = async () => {
+    try {
+      const res = await fetch(`/api/tickets/history?telegramId=${testTelegramId}`);
+      const data = await res.json();
+      if (data.tickets && data.tickets.length > 0) {
+        // Берем самый свежий открытый тикет
+        const openTicket = data.tickets.find((t: Ticket) => t.status === "open");
+        if (openTicket) setActiveTicket(openTicket);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
-    const timer = setTimeout(() => setVisible(true), 3000);
-    return () => clearTimeout(timer);
-  }, []);
+    if (isOpen) checkActiveTicket();
+  }, [isOpen]);
 
-  if (!visible) return null;
+  // Интеграция автообновления сообщений в чате (раз в 3 секунды)
+  useEffect(() => {
+    if (!activeTicket) return;
+    loadMessages(activeTicket.id);
+    const interval = setInterval(() => loadMessages(activeTicket.id), 3000);
+    return () => clearInterval(interval);
+  }, [activeTicket]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
+
+  // Создание нового обращения
+  const handleCreateTicket = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!message.trim()) return;
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/tickets/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ telegramId: testTelegramId, category, message }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage("");
+        checkActiveTicket(); // Переключаем на окно чата
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Отправка текстового ответа в чат
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeTicket || !chatText.trim()) return;
+    const textToSend = chatText;
+    setChatText("");
+
+    try {
+      await fetch("/api/tickets/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticketId: activeTicket.id, sender: "user", text: textToSend }),
+      });
+      loadMessages(activeTicket.id);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
-    <>
-      {/* Overlay */}
-      {open && (
-        <div
-          className="fixed inset-0 z-[98]"
-          onClick={() => setOpen(false)}
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-        />
+    <div className="fixed bottom-6 right-6 z-[9999] font-mono">
+      {/* 3D-Кнопка вызова чата (Янтарь + Металл) */}
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="bg-zinc-900 text-amber-500 border-2 border-amber-500/80 px-5 py-4 uppercase text-xs font-black tracking-widest shadow-[0_4px_20px_rgba(245,158,11,0.25)] hover:bg-amber-500 hover:text-black hover:scale-105 active:scale-95 transition-all rounded-sm cursor-pointer"
+        >
+          ⚡ [ ЧАТ_ПОДДЕРЖКИ ]
+        </button>
       )}
 
-      {/* Widget container */}
-      <div
-        className="fixed bottom-5 right-5 z-[99]"
-        style={{
-          opacity: visible ? 1 : 0,
-          transform: visible ? "translateY(0)" : "translateY(12px)",
-          transition: "opacity 0.5s ease, transform 0.5s ease",
-        }}
-      >
-        {/* Chat window */}
-        {open && (
-          <div
-            className="mb-4 overflow-hidden"
-            style={{
-              width: "340px",
-              maxWidth: "calc(100vw - 2.5rem)",
-              background: "#111111",
-              border: "1px solid rgba(201,123,61,0.1)",
-              borderRadius: "16px",
-              boxShadow: "0 16px 48px rgba(0,0,0,0.5)",
-              animation: "sdChatIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
-            }}
-          >
-            {/* Header */}
-            <div
-              className="px-5 py-4"
-              style={{
-                background: "linear-gradient(135deg, #C97B3D, #D4945A)",
-              }}
+      {/* Окно Живого Чата */}
+      {isOpen && (
+        <div className="w-85 h-112 bg-[#0e0e10] border-2 border-zinc-800 shadow-[0_10px_40px_rgba(0,0,0,0.8)] flex flex-col rounded-sm overflow-hidden text-zinc-300">
+          {/* Header */}
+          <div className="bg-zinc-900 p-3 border-b border-zinc-800 flex justify-between items-center">
+            <div className="flex flex-col items-start">
+              <span className="text-xs font-black uppercase text-zinc-100 tracking-wider">SOUL<span className="text-amber-500">DAWN</span> SUPPORT</span>
+              <span className="text-[8px] text-zinc-500 uppercase">// LIVE_CONNECT_OK</span>
+            </div>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-zinc-500 hover:text-amber-500 text-xs font-bold bg-transparent border-none cursor-pointer"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-9 h-9 flex items-center justify-center"
-                    style={{
-                      background: "rgba(0,0,0,0.2)",
-                      borderRadius: "10px",
-                    }}
-                  >
-                    <span className="text-[11px] font-black text-white tracking-wider">SD</span>
+              [X]
+            </button>
+          </div>
+
+          {/* Body */}
+          <div className="flex-1 p-3 overflow-y-auto text-xs space-y-3">
+            {activeTicket ? (
+              /* ЕСЛИ ТИКЕТ ОТКРЫТ: Показываем окно переписки */
+              <div className="flex flex-col h-full justify-between">
+                <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[260px]">
+                  <div className="bg-zinc-950 p-2 border border-zinc-900 text-zinc-400 border-l-2 border-l-amber-500 mb-3">
+                    <span className="text-[8px] block text-zinc-600 uppercase">// Описание проблемы:</span>
+                    {activeTicket.message}
+                  </div>
+
+                  {chatMessages.map((msg) => (
+                    <div key={msg.id} className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}>
+                      <div className={`p-2 max-w-[85%] rounded-sm ${msg.sender === "user" ? "bg-amber-500 text-black font-semibold" : "bg-zinc-900 text-zinc-200 border border-zinc-800"}`}>
+                        {msg.message}
+                      </div>
+                      <span className="text-[7px] text-zinc-600 uppercase mt-0.5">{msg.sender}</span>
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Поле ввода сообщения в открытый чат */}
+                <form onSubmit={handleSendMessage} className="flex gap-2 border-t border-zinc-900 pt-2 bg-[#0e0e10]">
+                  <input
+                    type="text"
+                    value={chatText}
+                    onChange={(e) => setChatText(e.target.value)}
+                    placeholder="Напишите ответ..."
+                    className="flex-1 bg-zinc-900 border border-zinc-800 p-2 text-xs text-white focus:outline-none focus:border-amber-500 rounded-sm"
+                  />
+                  <button type="submit" className="bg-amber-500 text-black font-black text-[10px] px-3 border-none rounded-sm cursor-pointer">ОТПРАВИТЬ</button>
+                </form>
+              </div>
+            ) : (
+              /* ЕСЛИ ТИКЕТА НЕТ: Показываем форму создания обращения */
+              <form onSubmit={handleCreateTicket} className="space-y-4 h-full flex flex-col justify-between">
+                <div className="space-y-3">
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-wide leading-relaxed">
+                    // У вас нет активных диалогов. Опишите вашу проблему, чтобы начать сессию с ассистентом или оператором.
+                  </p>
+                  <div>
+                    <label className="block text-[9px] uppercase text-zinc-500 font-bold mb-1">// КАТЕГОРИЯ</label>
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-800 p-2 text-xs text-zinc-300 focus:outline-none focus:border-amber-500 rounded-sm cursor-pointer"
+                    >
+                      <option value="general">ОБЩИЕ ВОПРОСЫ</option>
+                      <option value="order">ПРОБЛЕМА С ЗАКАЗОМ</option>
+                      <option value="delivery">ДОСТАВКА И ЛОГИСТИКА</option>
+                      <option value="return">ОБМЕН И ВОЗВРАТ</option>
+                    </select>
                   </div>
                   <div>
-                    <p className="text-[13px] font-bold tracking-wide uppercase text-white">
-                      SOULDAWN
-                    </p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <div
-                        className="w-1.5 h-1.5 rounded-full"
-                        style={{
-                          background: "#4ADE80",
-                          boxShadow: "0 0 6px rgba(74,222,128,0.5)",
-                        }}
-                      />
-                      <p className="text-[10px] text-white/70">Онлайн</p>
-                    </div>
+                    <label className="block text-[9px] uppercase text-zinc-500 font-bold mb-1">// ТЕКСТ ОБРАЩЕНИЯ</label>
+                    <textarea
+                      required
+                      rows={4}
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      placeholder="Введите сообщение..."
+                      className="w-full bg-zinc-900 border border-zinc-800 p-2 text-xs text-zinc-200 focus:outline-none focus:border-amber-500 resize-none rounded-sm"
+                    />
                   </div>
                 </div>
-
                 <button
-                  onClick={() => setOpen(false)}
-                  className="w-8 h-8 flex items-center justify-center"
-                  style={{
-                    background: "rgba(0,0,0,0.15)",
-                    borderRadius: "8px",
-                    color: "rgba(255,255,255,0.7)",
-                  }}
-                  aria-label="Закрыть"
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-transparent border-2 border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-black font-black py-3 uppercase tracking-widest text-[10px] disabled:opacity-30 rounded-sm cursor-pointer transition-all"
                 >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <line x1="3" y1="3" x2="11" y2="11" />
-                    <line x1="11" y1="3" x2="3" y2="11" />
-                  </svg>
+                  {loading ? "⚡ ПОДКЛЮЧЕНИЕ..." : "⚙️ НАЧАТЬ ДИАЛОГ"}
                 </button>
-              </div>
-            </div>
-
-            {/* Messages */}
-            <div className="px-5 pt-5 pb-3">
-              <div className="flex gap-2.5 mb-3">
-                <div
-                  className="w-7 h-7 flex-shrink-0 flex items-center justify-center"
-                  style={{
-                    background: "linear-gradient(135deg, #C97B3D, #A8632A)",
-                    borderRadius: "8px",
-                  }}
-                >
-                  <span className="text-[8px] font-black text-white">SD</span>
-                </div>
-                <div
-                  className="px-3.5 py-2.5 max-w-[250px]"
-                  style={{
-                    background: "#1a1a1a",
-                    border: "1px solid rgba(201,123,61,0.08)",
-                    borderRadius: "2px 12px 12px 12px",
-                  }}
-                >
-                  <p className="text-[13px] text-text leading-relaxed">
-                    Привет! 👋
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-2.5 mb-4">
-                <div className="w-7 flex-shrink-0" />
-                <div
-                  className="px-3.5 py-2.5 max-w-[260px]"
-                  style={{
-                    background: "#1a1a1a",
-                    border: "1px solid rgba(201,123,61,0.08)",
-                    borderRadius: "12px 12px 12px 2px",
-                  }}
-                >
-                  <p className="text-[13px] text-muted leading-relaxed">
-                    Нужна помощь с заказом? Напиши нам — ответим быстро 🚀
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* CTA */}
-            <div
-              className="px-5 py-3"
-              style={{
-                borderTop: "1px solid rgba(201,123,61,0.06)",
-                background: "#0e0e0e",
-              }}
-            >
-              <a
-                href="https://t.me/souldawn_support_bot"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-3 text-white font-bold text-[11px] tracking-wider uppercase"
-                style={{
-                  background: "linear-gradient(135deg, #C97B3D, #D4945A)",
-                  borderRadius: "10px",
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
-                </svg>
-                Открыть чат
-              </a>
-            </div>
+              </form>
+            )}
           </div>
-        )}
-
-        {/* Toggle button — круглый, без квадрата, без вращения */}
-        <button
-          onClick={() => setOpen(!open)}
-          className="group relative"
-          aria-label="Поддержка"
-          style={{
-            width: "52px",
-            height: "52px",
-            borderRadius: "50%",
-            background: open
-              ? "linear-gradient(135deg, #1a1a1a, #222)"
-              : "linear-gradient(135deg, #C97B3D, #D4945A)",
-            boxShadow: open
-              ? "0 2px 12px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(255,255,255,0.05)"
-              : "0 4px 20px rgba(201,123,61,0.4)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            border: "none",
-            cursor: "pointer",
-            transition: "all 0.3s ease",
-            transform: open ? "none" : undefined,
-          }}
-          onMouseEnter={(e) => {
-            if (!open) e.currentTarget.style.transform = "scale(1.08)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "scale(1)";
-          }}
-        >
-          {/* Pulse rings — only when closed */}
-          {!open && (
-            <>
-              <span
-                className="absolute inset-0 rounded-full"
-                style={{
-                  animation: "sdPulse 3s ease-in-out infinite",
-                  background: "rgba(201,123,61,0.15)",
-                }}
-              />
-              <span
-                className="absolute inset-0 rounded-full"
-                style={{
-                  animation: "sdPulse 3s ease-in-out 1s infinite",
-                  background: "rgba(201,123,61,0.1)",
-                }}
-              />
-            </>
-          )}
-
-          {/* Icon */}
-          {open ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E8E4E0" strokeWidth="2" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          ) : (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-            </svg>
-          )}
-        </button>
-      </div>
-    </>
+        </div>
+      )}
+    </div>
   );
 }

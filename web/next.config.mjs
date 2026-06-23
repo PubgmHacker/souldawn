@@ -4,7 +4,6 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Игнорируем ошибки ESLint и TypeScript во время сборки на Railway
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -14,7 +13,6 @@ const nextConfig = {
   async headers() {
     return [
       {
-        // Разрешаем Telegram встраивать страницы админки и поддержки во фреймы
         source: "/(admin|support)(.*)",
         headers: [
           {

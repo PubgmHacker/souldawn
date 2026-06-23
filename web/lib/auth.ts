@@ -1,7 +1,34 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
-const JWT_SECRET = process.env.JWT_SECRET || "souldawn_jwt_secret_change_in_production";
+// JWT_SECRET обязателен в production: дефолтный секрет позволяет подделать токен
+// (включая role=owner) и обойти всю админку. В dev допускаем явный fallback.
+//
+// ВАЖНО: проверка ́ленивая (при первом использовании), а не на этапе импорта,
+// чтобы `next build` (NODE_ENV=production, но без рантайм-секретов) не падал в CI.
+function isBuildPhase(): boolean {
+  return process.env.NEXT_PHASE === "phase-production-build";
+}
+
+let cachedSecret: string | null = null;
+function getSecret(): string {
+  if (cachedSecret) return cachedSecret;
+  const secret = process.env.JWT_SECRET;
+  const isProd = process.env.NODE_ENV === "production";
+
+  if (!secret) {
+    if (isProd && !isBuildPhase()) {
+      throw new Error("JWT_SECRET is required in production. Set a strong random value.");
+    }
+    cachedSecret = "souldawn_jwt_secret_dev_only";
+    return cachedSecret;
+  }
+  if (isProd && !isBuildPhase() && secret.length < 32) {
+    throw new Error("JWT_SECRET must be at least 32 characters in production.");
+  }
+  cachedSecret = secret;
+  return cachedSecret;
+}
 const JWT_EXPIRES_IN = "24h";
 const REFRESH_EXPIRES_IN = "7d";
 
@@ -27,16 +54,16 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 // ─── JWT helpers ─────────────────────────────────────────────────────────────
 
 export function signAccessToken(payload: Omit<JWTPayload, "iat" | "exp">): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign(payload, getSecret(), { expiresIn: JWT_EXPIRES_IN });
 }
 
 export function signRefreshToken(payload: Omit<JWTPayload, "iat" | "exp">): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: REFRESH_EXPIRES_IN });
+  return jwt.sign(payload, getSecret(), { expiresIn: REFRESH_EXPIRES_IN });
 }
 
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload;
+    return jwt.verify(token, getSecret()) as JWTPayload;
   } catch {
     return null;
   }
@@ -52,14 +79,14 @@ export interface EmailVerifyPayload {
 export function signEmailVerifyToken(userId: string, email: string): string {
   return jwt.sign(
     { userId, email, purpose: "verify_email" } satisfies EmailVerifyPayload,
-    JWT_SECRET,
+    getSecret(),
     { expiresIn: "24h" }
   );
 }
 
 export function verifyEmailToken(token: string): EmailVerifyPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as EmailVerifyPayload;
+    const decoded = jwt.verify(token, getSecret()) as EmailVerifyPayload;
     if (decoded.purpose !== "verify_email" || !decoded.userId || !decoded.email) {
       return null;
     }

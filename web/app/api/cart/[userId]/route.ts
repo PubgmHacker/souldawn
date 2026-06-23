@@ -11,7 +11,9 @@ export async function GET(
     return NextResponse.json({ items: [] });
   }
   try {
-    const res = await fetch(`${BOT_SERVER_URL}/api/cart/${userId}`);
+    const res = await fetch(`${BOT_SERVER_URL}/api/cart/${userId}`, {
+      signal: AbortSignal.timeout(5000),
+    });
     const data = await res.json();
     return NextResponse.json(data);
   } catch {
@@ -31,6 +33,7 @@ export async function POST(
     const body = await request.json();
     const res = await fetch(`${BOT_SERVER_URL}/api/cart/${userId}`, {
       method: "POST",
+      signal: AbortSignal.timeout(5000),
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });

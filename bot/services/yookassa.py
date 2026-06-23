@@ -4,6 +4,7 @@ from __future__ import annotations
 import base64
 import logging
 import time
+import uuid
 
 from aiohttp import ClientSession, ClientTimeout
 
@@ -41,7 +42,7 @@ async def create_yookassa_payment(amount_kopecks: int, description: str, metadat
                 headers={
                     "Authorization": f"Basic {auth}",
                     "Content-Type": "application/json",
-                    "Idempotence-Key": f"order-{int(time.time())}-{metadata.get('user_id', 0)}",
+                    "Idempotence-Key": f"order-{int(time.time())}-{metadata.get('user_id', 0)}-{uuid.uuid4().hex[:8]}",
                 },
                 json=payload,
                 timeout=ClientTimeout(total=15),

@@ -79,3 +79,44 @@ export async function applyPromoFromDb(rawCode: string, total: number): Promise<
     total_after_discount: total - discount,
   };
 }
+
+/**
+ * Атомарно резервирует (инкрементирует usedCount) одно использование промокода.
+ * Проверка лимита и инкремент выполняются одним условным UPDATE — без race condition.
+ * Возвращает true, если резервирование успешно. Коды только из хардкода (нет в БД) — без лимита.
+ */
+export async function reservePromoUsage(rawCode: string): Promise<boolean> {
+  const code = (rawCode || "").trim().toUpperCase();
+  if (!code) return false;
+  try {
+    const res = await prisma.promoCode.updateMany({
+      where: {
+        code,
+        isActive: true,
+        OR: [
+          { usageLimit: 0 },
+          { usageLimit: { gt: prisma.promoCode.fields.usedCount } },
+        ],
+      },
+      data: { usedCount: { increment: 1 } },
+    });
+    return res.count > 0;
+  } catch {
+    // Код только в хардкоде (таблицы нет) — лимита нет, считаем успехом.
+    return true;
+  }
+}
+
+/** Откат резерва промокода (при отмене заказа до оплаты). */
+export async function releasePromoUsage(rawCode: string): Promise<void> {
+  const code = (rawCode || "").trim().toUpperCase();
+  if (!code) return;
+  try {
+    await prisma.promoCode.updateMany({
+      where: { code, usedCount: { gt: 0 } },
+      data: { usedCount: { decrement: 1 } },
+    });
+  } catch {
+    /* нет таблицы — ничего не делаем */
+  }
+}

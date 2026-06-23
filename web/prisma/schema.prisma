@@ -84,8 +84,10 @@ model Order {
   items           Json
   total           Int
   status          String   @default("pending")
-  yookassaId      String?  @map("yookassa_id")
+  yookassaId      String?  @unique @map("yookassa_id")
   contact         Json?
+  promoCode       String?  @map("promo_code")
+  stockApplied    Boolean  @default(false) @map("stock_applied")
   trackingNumber  String?  @map("tracking_number")
   trackingCarrier String?  @map("tracking_carrier")
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()

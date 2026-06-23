@@ -629,6 +629,40 @@ async def mark_order_processing(order_id: str) -> bool:
             return result.rowcount > 0
 
 
+# ======================== PRODUCTS (единый каталог с web) ========================
+
+async def get_products_by_ids(ids: list[str]) -> dict[str, dict]:
+    """Возвращает {id: {name, price_kopecks, stock, is_active}} для активных товаров.
+
+    Источник истины — общая таблица products (та же, что у web/Prisma).
+    Цены в копейках. Неизвестные/неактивные товары в результат не попадают.
+    """
+    if not async_session_factory or not ids:
+        return {}
+    # Уникальные непустые id.
+    clean_ids = [str(i) for i in dict.fromkeys(ids) if str(i).strip()]
+    if not clean_ids:
+        return {}
+    out: dict[str, dict] = {}
+    async with async_session_factory() as session:
+        async with session.begin():
+            result = await session.execute(
+                text(
+                    "SELECT id::text AS id, name, price_kopecks, stock, is_active "
+                    "FROM products WHERE id = ANY(:ids) AND is_active = TRUE"
+                ),
+                {"ids": clean_ids},
+            )
+            for row in result.mappings().all():
+                out[row["id"]] = {
+                    "name": row["name"],
+                    "price_kopecks": int(row["price_kopecks"] or 0),
+                    "stock": int(row["stock"] or 0),
+                    "is_active": bool(row["is_active"]),
+                }
+    return out
+
+
 # ======================== EXPENSES ========================
 
 async def add_expense(category: str, description: str, amount: int) -> dict:

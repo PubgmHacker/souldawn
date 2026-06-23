@@ -7,7 +7,8 @@ export type { CartItem };
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (product: Product, size: string) => void;
+  // Возвращает false, если добавить нельзя (исчерпан остаток).
+  addItem: (product: Product, size: string) => boolean;
   removeItem: (productId: string, size: string) => void;
   updateQuantity: (productId: string, size: string, quantity: number) => void;
   clearCart: () => void;
@@ -15,16 +16,29 @@ interface CartContextType {
   totalPrice: number;
 }
 
+// Доступный остаток товара. undefined/отсутствие stock трактуем как без ограничения.
+function maxStock(product: Product): number {
+  return typeof product.stock === "number" ? product.stock : Infinity;
+}
+
 const CartContext = createContext<CartContextType | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
-  const addItem = useCallback((product: Product, size: string) => {
+  const addItem = useCallback((product: Product, size: string): boolean => {
+    const limit = maxStock(product);
+    let ok = true;
     setItems((prev) => {
       const existing = prev.find(
         (i) => i.product.id === product.id && i.size === size
       );
+      const currentQty = existing?.quantity ?? 0;
+      // Остаток исчерпан — не добавляем.
+      if (currentQty + 1 > limit) {
+        ok = false;
+        return prev;
+      }
       if (existing) {
         return prev.map((i) =>
           i.product.id === product.id && i.size === size
@@ -34,6 +48,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
       return [...prev, { product, size, quantity: 1 }];
     });
+    return ok;
   }, []);
 
   const removeItem = useCallback((productId: string, size: string) => {
@@ -50,11 +65,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return;
     }
     setItems((prev) =>
-      prev.map((i) =>
-        i.product.id === productId && i.size === size
-          ? { ...i, quantity }
-          : i
-      )
+      prev.map((i) => {
+        if (i.product.id === productId && i.size === size) {
+          // Ограничиваем доступным остатком.
+          const limit = maxStock(i.product);
+          return { ...i, quantity: Math.min(quantity, limit) };
+        }
+        return i;
+      })
     );
   }, []);
 

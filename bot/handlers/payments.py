@@ -23,6 +23,7 @@ from database import (
     get_or_create_user, save_user_cart, save_order,
     get_user_cart, get_full_stats,
     get_paid_unnotified_orders, mark_order_processing,
+    get_products_by_ids,
 )
 from utils import BANNERS, _fmt_price
 from texts import welcome, sent_fail, offline, pay_pending_text, pay_confirmed_text
@@ -245,15 +246,76 @@ async def handle_webapp(message: Message, state: FSMContext, bot: Bot):
         return
 
     items = order.get("items", [])
-    total_rub = order.get("total", 0)
     contact = order.get("contact", {})
     payment_method = order.get("payment", "card")
+    promo_code = str(order.get("promo", order.get("promo_code", "")) or "").strip().upper()
 
     if not items:
         await message.answer("Empty order", reply_markup=main_kb())
         return
 
-    total_kopecks = int(total_rub) * 100
+    # БЕЗОПАСНОСТЬ: сумма НЕ берётся из клиента (miniapp можно подменить).
+    # ЕДИНЫЙ КАТАЛОГ: цены и остатки читаются из БД по uuid (та же таблица products,
+    # что у web). Так склад корректно спишется web-webhook'ом по id позиций.
+    # Агрегируем кол-во по id (защита от обхода проверки остатка дубликатами).
+    qty_by_id: dict[str, int] = {}
+    for it in items:
+        pid = str(it.get("id", "")).strip()
+        if not pid:
+            await message.answer("Некорректный товар в заказе", reply_markup=main_kb())
+            return
+        try:
+            qty = int(it.get("qty", it.get("quantity", 1)))
+        except (TypeError, ValueError):
+            qty = 0
+        if qty <= 0:
+            await message.answer("Invalid quantity", reply_markup=main_kb())
+            return
+        qty_by_id[pid] = qty_by_id.get(pid, 0) + qty
+
+    catalog = await get_products_by_ids(list(qty_by_id.keys()))
+
+    # Fallback на статичный slug-каталог, если БД недоступна (без проверки остатка).
+    use_fallback = not catalog
+
+    subtotal_kopecks = 0
+    for it in items:
+        pid = str(it.get("id", "")).strip()
+        qty = qty_by_id[pid]
+        if use_fallback:
+            unit = PRODUCT_PRICES_KOPECKS.get(pid)
+            if unit is None:
+                logger.warning(f"handle_webapp: unknown product id '{pid}' from user {user.id}")
+                await message.answer("Товар недоступен или снят с продажи", reply_markup=main_kb())
+                return
+        else:
+            product = catalog.get(pid)
+            if product is None:
+                logger.warning(f"handle_webapp: unknown product id '{pid}' from user {user.id}")
+                await message.answer("Товар недоступен или снят с продажи", reply_markup=main_kb())
+                return
+            # Проверка остатка по суммарному кол-ву товара.
+            if product["stock"] <= 0 or qty_by_id[pid] > product["stock"]:
+                await message.answer(
+                    f"Товара «{product['name']}» недостаточно на складе",
+                    reply_markup=main_kb(),
+                )
+                return
+            unit = product["price_kopecks"]
+        subtotal_kopecks += unit * qty
+        # Фиксируем серверную цену/кол-во в позиции заказа.
+        it["price"] = unit
+        it["qty"] = qty
+
+    if subtotal_kopecks <= 0:
+        await message.answer("Empty order", reply_markup=main_kb())
+        return
+
+    # Серверное применение промокода.
+    total_kopecks = subtotal_kopecks
+    if promo_code and promo_code in PROMO_CODES:
+        pct = PROMO_CODES[promo_code]
+        total_kopecks = subtotal_kopecks - (subtotal_kopecks * pct) // 100
 
     items_summary = ", ".join([it.get("name", "?") for it in items[:3]])
     if len(items) > 3:
@@ -279,7 +341,7 @@ async def handle_webapp(message: Message, state: FSMContext, bot: Bot):
         "username": uname,
         "items": items,
         "total_kopecks": total_kopecks,
-        "total_rub": total_rub,
+        "total_rub": total_kopecks // 100,
         "contact": contact,
         "payment_method": payment_method,
         "status": "pending",

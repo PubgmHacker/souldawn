@@ -1,5 +1,6 @@
 export interface Product {
-  id: string;
+  id: string; // uuid из БД (используется при создании заказа)
+  slug?: string; // человекочитаемый идентификатор для URL
   name: string;
   price: string;
   oldPrice?: string;

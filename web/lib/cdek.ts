@@ -29,8 +29,25 @@ export interface DeliveryParams {
   cityCode?: number; // код города СДЭК (если известен)
   postalCode?: string; // почтовый индекс получателя
   region?: string; // название региона/города (для fallback)
+  pvzCode?: string; // код ПВЗ СДЭК (выбран на карте)
   totalQty: number; // суммарное кол-во единиц (для веса)
 }
+
+// Пункт выдачи СДЭК для отображения на карте.
+export interface CdekPoint {
+  code: string;
+  name: string;
+  address: string;
+  fullAddress: string;
+  city: string;
+  postalCode: string | null;
+  lat: number;
+  lon: number;
+  workTime: string;
+}
+
+// Тариф «склад-склад» (ПВЗ->ПВЗ) — для доставки в пункт выдачи.
+const CDEK_TARIFF_PVZ = Number(process.env.CDEK_TARIFF_PVZ || "136");
 
 // Вес одной единицы одежды (граммы) для расчёта.
 const UNIT_WEIGHT_G = 500;
@@ -40,6 +57,7 @@ async function getToken(): Promise<string | null> {
   try {
     const res = await fetch(`${CDEK_API_URL}/oauth/token?parameters`, {
       method: "POST",
+      signal: AbortSignal.timeout(5000),
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         grant_type: "client_credentials",
@@ -97,15 +115,19 @@ export async function calcDelivery(params: DeliveryParams): Promise<DeliveryQuot
   if (params.cityCode) toLocation.code = params.cityCode;
   if (params.postalCode) toLocation.postal_code = params.postalCode;
 
+  // Если выбран ПВЗ — считаем по тарифу пункта выдачи.
+  const tariffCode = params.pvzCode ? CDEK_TARIFF_PVZ : CDEK_TARIFF_CODE;
+
   try {
     const res = await fetch(`${CDEK_API_URL}/calculator/tariff`, {
       method: "POST",
+      signal: AbortSignal.timeout(5000),
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        tariff_code: CDEK_TARIFF_CODE,
+        tariff_code: tariffCode,
         from_location: { code: CDEK_FROM_CITY_CODE },
         to_location: toLocation,
         packages: [{ weight, length: 30, width: 25, height: 10 }],
@@ -124,5 +146,85 @@ export async function calcDelivery(params: DeliveryParams): Promise<DeliveryQuot
     };
   } catch {
     return fallbackQuote(params);
+  }
+}
+
+/**
+ * Список пунктов выдачи СДЭК для отображения на карте.
+ * Поиск по коду города СДЭК или по почтовому индексу.
+ * Без ключей СДЭК возвращает пустой список (карта покажет подсказку).
+ */
+export async function findPvz(params: {
+  cityCode?: number;
+  postalCode?: string;
+}): Promise<CdekPoint[]> {
+  const token = await getToken();
+  if (!token) return [];
+  if (!params.cityCode && !params.postalCode) return [];
+
+  const query = new URLSearchParams({ type: "PVZ", country_code: "RU" });
+  if (params.cityCode) query.set("city_code", String(params.cityCode));
+  if (params.postalCode) query.set("postal_code", String(params.postalCode));
+
+  try {
+    const res = await fetch(`${CDEK_API_URL}/deliverypoints?${query.toString()}`, {
+      method: "GET",
+      signal: AbortSignal.timeout(7000),
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!Array.isArray(data)) return [];
+    return data
+      .map((p: any): CdekPoint | null => {
+        const loc = p?.location || {};
+        const lat = Number(loc.latitude);
+        const lon = Number(loc.longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+        return {
+          code: String(p.code || ""),
+          name: String(p.name || "ПВЗ СДЭК"),
+          address: String(loc.address || ""),
+          fullAddress: String(loc.address_full || loc.address || ""),
+          city: String(loc.city || ""),
+          postalCode: loc.postal_code ? String(loc.postal_code) : null,
+          lat,
+          lon,
+          workTime: String(p.work_time || ""),
+        };
+      })
+      .filter((p): p is CdekPoint => p !== null && p.code !== "");
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Разрешает код города СДЭК по названию или индексу (для поиска ПВЗ по городу).
+ */
+export async function resolveCityCode(params: {
+  city?: string;
+  postalCode?: string;
+}): Promise<number | null> {
+  const token = await getToken();
+  if (!token) return null;
+  const query = new URLSearchParams({ country_codes: "RU", size: "1" });
+  if (params.city) query.set("city", params.city);
+  if (params.postalCode) query.set("postal_code", params.postalCode);
+
+  try {
+    const res = await fetch(`${CDEK_API_URL}/location/cities?${query.toString()}`, {
+      method: "GET",
+      signal: AbortSignal.timeout(7000),
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (Array.isArray(data) && data.length && data[0]?.code) {
+      return Number(data[0].code);
+    }
+    return null;
+  } catch {
+    return null;
   }
 }

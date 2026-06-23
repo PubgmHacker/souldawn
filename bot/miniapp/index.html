@@ -1271,7 +1271,10 @@ async function loadProducts() {
     const data = await r.json();
     const list = Array.isArray(data.products) ? data.products : [];
     PRODUCTS = list.map(p => ({
-      id: p.slug || p.id,
+      // ВАЖНО: id — реальный uuid из БД. По нему сервер пересчитывает
+      // сумму и списывает остаток. slug храним отдельно для URL.
+      id: p.id || p.slug,
+      slug: p.slug || null,
       name: p.name,
       category: p.category,
       price: Math.round((p.priceKopecks || 0) / 100),

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { findOrderByYookassaId } from "@/lib/orders";
+import { findOrderByYookassaId, markOrderPaid } from "@/lib/orders";
 
 const YOOKASSA_SHOP_ID = process.env.YOOKASSA_SHOP_ID || "";
 const YOOKASSA_SECRET_KEY = process.env.YOOKASSA_SECRET_KEY || "";
@@ -22,9 +22,34 @@ export async function GET(
       const auth = Buffer.from(`${YOOKASSA_SHOP_ID}:${YOOKASSA_SECRET_KEY}`).toString("base64");
       const res = await fetch(`https://api.yookassa.ru/v3/payments/${paymentId}`, {
         headers: { Authorization: `Basic ${auth}` },
+        signal: AbortSignal.timeout(8000),
       });
       if (res.ok) {
         const data = await res.json();
+
+        // Подстраховка против задержки webhook: если YooKassa подтвердила
+        // оплату, домечаем заказ идемпотентно (со сверкой суммы),
+        // чтобы склад списался даже если webhook не дошёл. markOrderPaid
+        // идемпотентен — двойного списания не будет.
+        if (data.status === "succeeded") {
+          try {
+            const order = await findOrderByYookassaId(paymentId);
+            const paidValue = data?.amount?.value;
+            const paidKopecks =
+              paidValue !== undefined ? Math.round(parseFloat(paidValue) * 100) : null;
+            if (
+              order &&
+              paidKopecks !== null &&
+              Number.isFinite(paidKopecks) &&
+              paidKopecks === order.total
+            ) {
+              await markOrderPaid(paymentId);
+            }
+          } catch {
+            // не блокируем ответ клиенту — webhook дооформит
+          }
+        }
+
         return NextResponse.json({
           payment_id: paymentId,
           status: data.status || "unknown",

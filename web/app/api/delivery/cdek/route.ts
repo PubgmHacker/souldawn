@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
     cityCode: body?.city_code ? Number(body.city_code) : undefined,
     postalCode: body?.postal_code ? String(body.postal_code) : undefined,
     region: body?.region ? String(body.region) : undefined,
+    pvzCode: body?.pvz_code ? String(body.pvz_code) : undefined,
     totalQty,
   });
 

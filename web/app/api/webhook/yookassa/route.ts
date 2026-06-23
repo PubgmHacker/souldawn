@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { markOrderPaid, markOrderCancelled, findOrderByYookassaId } from "@/lib/orders";
+import {
+  markOrderPaid,
+  markOrderCancelled,
+  findOrderByYookassaId,
+  ensureOrderFromMetadata,
+} from "@/lib/orders";
 
 /**
  * POST /api/webhook/yookassa — уведомление YooKassa об оплате.
  *
- * Ищет заказ по yookassaId в БД (не в памяти), выставляет paid/cancelled.
- * WEBHOOK_SECRET ОБЯЗАТЕЛЕН: без него запрос отклоняется (503), чтобы
- * исключить поддельные payment.succeeded.
+ * Ищет заказ по yookassaId в БД. Если заказа нет (сбой при создании) —
+ * восстанавливает его из metadata платежа. Списание склада и статус paid —
+ * идемпотентно (markOrderPaid). WEBHOOK_SECRET ОБЯЗАТЕЛЕН.
  */
 export async function POST(request: NextRequest) {
   const secret = process.env.WEBHOOK_SECRET || "";
@@ -39,24 +44,53 @@ export async function POST(request: NextRequest) {
   }
 
   if (event === "payment.succeeded") {
-    // Проверка суммы (копейки).
-    const order = await findOrderByYookassaId(paymentId);
-    if (order) {
-      const paidValue = obj?.amount?.value;
-      if (paidValue !== undefined) {
-        const paidKopecks = Math.round(parseFloat(paidValue) * 100);
-        if (paidKopecks !== order.total) {
-          console.error(
-            `YooKassa webhook: amount mismatch payment=${paymentId} paid=${paidKopecks} expected=${order.total}`
-          );
-          // Не подтверждаем оплату при расхождении суммы.
-          return NextResponse.json({ ok: true, warning: "amount_mismatch" });
-        }
-      }
-      await markOrderPaid(paymentId);
-    } else {
-      console.warn(`YooKassa webhook: order not found for payment ${paymentId}`);
+    // Сумма оплаты ОБЯЗАТЕЛЬНА для сверки: без неё не подтверждаем.
+    const paidValue = obj?.amount?.value;
+    if (paidValue === undefined || paidValue === null) {
+      console.error(`YooKassa webhook: missing amount for payment ${paymentId}`);
+      return NextResponse.json({ ok: true, warning: "missing_amount" });
     }
+    const paidKopecks = Math.round(parseFloat(paidValue) * 100);
+    if (!Number.isFinite(paidKopecks)) {
+      console.error(`YooKassa webhook: invalid amount for payment ${paymentId}: ${paidValue}`);
+      return NextResponse.json({ ok: true, warning: "invalid_amount" });
+    }
+
+    // Заказ мог не сохраниться при создании — восстанавливаем из metadata.
+    let order = await findOrderByYookassaId(paymentId);
+    if (!order) {
+      const meta = obj?.metadata || {};
+      try {
+        const items = meta.items ? JSON.parse(meta.items) : [];
+        const contact = meta.contact ? JSON.parse(meta.contact) : { phone: "" };
+        if (Array.isArray(items) && items.length) {
+          order = await ensureOrderFromMetadata({
+            yookassaId: paymentId,
+            totalKopecks: paidKopecks,
+            items,
+            contact,
+            promoCode: meta.promo ?? null,
+          });
+        }
+      } catch (e) {
+        console.error(`YooKassa webhook: failed to rebuild order from metadata ${paymentId}`, e);
+      }
+    }
+
+    if (!order) {
+      console.warn(`YooKassa webhook: order not found for payment ${paymentId}`);
+      return NextResponse.json({ ok: true, warning: "order_not_found" });
+    }
+
+    if (paidKopecks !== order.total) {
+      console.error(
+        `YooKassa webhook: amount mismatch payment=${paymentId} paid=${paidKopecks} expected=${order.total}`
+      );
+      // Не подтверждаем оплату при расхождении суммы.
+      return NextResponse.json({ ok: true, warning: "amount_mismatch" });
+    }
+
+    await markOrderPaid(paymentId);
   } else if (event === "payment.canceled") {
     await markOrderCancelled(paymentId);
   }

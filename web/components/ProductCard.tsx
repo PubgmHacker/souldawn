@@ -149,11 +149,19 @@ export default function ProductCard({ product, layout = "grid", onProductClick }
   const [hovered, setHovered] = useState(false);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [added, setAdded] = useState(false);
+  const [limitHit, setLimitHit] = useState(false);
   const { addItem } = useCart();
-  const isSoldOut = product.tag === "Нет в наличии";
+  // Sold-out по реальному остатку, с fallback на текстовый tag.
+  const stock = typeof product.stock === "number" ? product.stock : null;
+  const isSoldOut = stock !== null ? stock <= 0 : product.tag === "Нет в наличии";
 
   const handleAddToCart = (size: string) => {
-    addItem(product, size);
+    const ok = addItem(product, size);
+    if (!ok) {
+      setLimitHit(true);
+      setTimeout(() => setLimitHit(false), 1800);
+      return;
+    }
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   };

@@ -83,9 +83,17 @@ function ProductIcon({ icon, className }: { icon: string; className?: string }) 
 export default function ProductModal({ product, onClose }: ProductModalProps) {
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [added, setAdded] = useState(false);
-  const { addItem } = useCart();
-  const isSoldOut = product.tag === "Нет в наличии";
+  const [limitHit, setLimitHit] = useState(false);
+  const { addItem, items } = useCart();
+  // Наличие по реальному остатку (stock), а не по текстовому tag.
+  const stock = typeof product.stock === "number" ? product.stock : null;
+  const isSoldOut = stock !== null ? stock <= 0 : product.tag === "Нет в наличии";
   const defaultSize = product.sizes?.[0] || "Универсальный";
+  // Сколько уже в корзине по этому товару (по всем размерам).
+  const inCart = items
+    .filter((i) => i.product.id === product.id)
+    .reduce((s, i) => s + i.quantity, 0);
+  const canAddMore = stock === null ? true : inCart < stock;
 
   /* lock body scroll */
   useEffect(() => {
@@ -101,7 +109,12 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
   }, [onClose]);
 
   const handleAdd = () => {
-    addItem(product, selectedSize || defaultSize);
+    const ok = addItem(product, selectedSize || defaultSize);
+    if (!ok) {
+      setLimitHit(true);
+      setTimeout(() => setLimitHit(false), 2000);
+      return;
+    }
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   };
@@ -230,18 +243,40 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
               </div>
             )}
 
+            {/* Остаток на складе */}
+            {stock !== null && !isSoldOut && (
+              <div className="mt-4 text-[11px] tracking-wider">
+                {stock <= 5 ? (
+                  <span className="text-accent-red font-bold">Осталось всего {stock} шт.</span>
+                ) : (
+                  <span className="text-green-400">В наличии: {stock} шт.</span>
+                )}
+              </div>
+            )}
+
             {/* Add to cart */}
             <div className="mt-6">
               {!isSoldOut ? (
                 <button
                   onClick={handleAdd}
+                  disabled={!canAddMore}
                   className={`w-full py-3.5 text-[11px] font-black tracking-[0.15em] uppercase transition-all duration-300 ${
-                    added
+                    limitHit
+                      ? "bg-accent-red text-white"
+                      : added
                       ? "bg-green-500 text-bg"
+                      : !canAddMore
+                      ? "bg-white/5 text-muted/40 cursor-not-allowed"
                       : "bg-accent text-bg hover:bg-white"
                   }`}
                 >
-                  {added ? "Добавлено в корзину ✓" : "Добавить в корзину"}
+                  {limitHit
+                    ? "Больше нет в наличии"
+                    : added
+                    ? "Добавлено в корзину ✓"
+                    : !canAddMore
+                    ? "Максимум в корзине"
+                    : "Добавить в корзину"}
                 </button>
               ) : (
                 <div className="w-full py-3.5 text-center text-[11px] font-black tracking-[0.15em] uppercase text-muted/30 border border-white/[0.06]">

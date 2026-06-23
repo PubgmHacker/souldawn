@@ -103,9 +103,16 @@ async def forward_to_operators(message: Message, bot: Bot, ai_answer: str | None
         f"Текст обращения:\n<i>{message.text}</i>"
         f"{ai_status}"
     )
+    
+    # Создаем клавиатуру с кнопкой ответа для операторов (привязываем к ID сообщения юзера)
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="💬 Ответить пользователю", callback_data=f"ticket:msg_reply:{message.from_user.id}:{message.message_id}")]
+    ])
+    
     for op_id in SUPPORT_CHAT_IDS:
         try:
-            await bot.send_message(chat_id=op_id, text=text, parse_mode="HTML")
+            await bot.send_message(chat_id=op_id, text=text, parse_mode="HTML", reply_markup=kb)
             await asyncio.sleep(0.05)
         except Exception as e:
             logger.warning(f"Failed to notify operator {op_id}: {e}")

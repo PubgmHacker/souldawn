@@ -90,6 +90,7 @@ async def main():
     if OPENAI_API_KEY:
         logger.info(f"AI: {OPENAI_MODEL} via {OPENAI_BASE_URL.split('/')[2]}")
     else:
+        pass
     if YOOKASSA_SHOP_ID:
         logger.info(f"YooKassa: shop_id={YOOKASSA_SHOP_ID[:6]}...")
     else:

@@ -98,7 +98,7 @@ export default function SupportPage() {
         <div className="flex flex-col h-[calc(100vh-140px)] border border-zinc-800 bg-zinc-950/60 p-2 relative rounded-sm">
           <div className="flex justify-between items-center border-b border-zinc-800 pb-2 mb-2">
             <button onClick={() => setSelectedTicket(null)} className="text-amber-500 text-xs font-bold bg-transparent border-none cursor-pointer">[ ← К СПИСКУ ]</button>
-            <span className="text-[9px] text-zinc-500 uppercase">СЕССИЯ #{selectedTicket.id.slice(-6)}</span>
+            <span className="text-[9px] text-zinc-500 uppercase">СЕССИЯ #{selectedTicket.id.slice(-6)} | {selectedTicket.status === 'open' ? '🤖 ИИ_АГЕНТ' : '👨‍💻 МЕНЕДЖЕР'}</span>
           </div>
           <div className="flex-1 overflow-y-auto space-y-2 p-2 text-xs">
             <div className="bg-zinc-900/40 p-2 border border-zinc-800 text-zinc-400 border-l-2 border-l-amber-500 mb-3"><span className="text-[8px] block text-zinc-600 uppercase">// ТЕКСТ ВАШЕГО ЗАПРОСА:</span>{selectedTicket.message}</div>
@@ -110,6 +110,26 @@ export default function SupportPage() {
             ))}
             <div ref={chatEndRef} />
           </div>
+          {/* Кнопка ручной эскалации МТС-стайл */}
+          {selectedTicket && selectedTicket.status === "open" && (
+            <button 
+              onClick={async () => {
+                alert("Запрос передан операторам! Пожалуйста, ожидайте ответа.");
+                // Отправляем триггер на бэкенд, имитируя запрос человека
+                await fetch("/api/tickets/messages", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ ticketId: selectedTicket.id, sender: "user", text: "Позови оператора" })
+                });
+                setSelectedTicket({...selectedTicket, status: "operator"});
+              }}
+              type="button"
+              className="w-full text-[9px] bg-zinc-900 hover:bg-zinc-800 text-amber-500 border border-dashed border-zinc-800 py-2 uppercase font-bold tracking-widest mb-1 transition-all cursor-pointer rounded-sm"
+            >
+              [ 💬 Переключить на живого оператора ]
+            </button>
+          )}
+
           <form onSubmit={sendChatMessage} className="flex gap-2 border-t border-zinc-800 pt-2 mt-2">
             <input type="text" value={chatText} onChange={(e) => setChatText(e.target.value)} placeholder="Введите сообщение..." className="flex-1 bg-zinc-900 border border-zinc-800 p-2 text-xs text-white focus:outline-none focus:border-amber-500 rounded-sm" />
             <button type="submit" className="bg-amber-500 text-black font-black text-xs px-4 border-none rounded-sm cursor-pointer">ОТПРАВИТЬ</button>

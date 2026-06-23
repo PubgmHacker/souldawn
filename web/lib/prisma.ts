@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 
-// ГЛОБАЛЬНЫЙ ПАТЧ ЯДРА: Автоматическая сериализация BigInt для PostgreSQL
+// Глобальный патч: переводим BigInt в строки перед JSON-отправкой
 if (!(BigInt.prototype as any).toJSON) {
   (BigInt.prototype as any).toJSON = function () {
     return this.toString();

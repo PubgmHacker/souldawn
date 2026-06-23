@@ -5,15 +5,17 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 import aiohttp
 import random
-from config import ADMIN_IDS, SUPPORT_CHAT_IDS, MINIAPP_URL
+import os
+from config import ADMIN_IDS, SUPPORT_CHAT_IDS
 
 router = Router()
 
 class ReplyStates(StatesGroup):
     waiting_for_reply_text = State()
 
-# Форматируем базовый URL (убираем лишние слэши)
-BASE_URL = MINIAPP_URL.rstrip("/") + "/" if MINIAPP_URL else "https://railway.app"
+# Безопасное чтение переменной окружения напрямую из Railway без падений импорта
+RAW_URL = os.getenv("MINIAPP_URL", "https://railway.app")
+BASE_URL = RAW_URL.rstrip("/") + "/"
 
 @router.message(Command("admin"))
 async def open_admin_panel_support(message: Message):
@@ -21,14 +23,14 @@ async def open_admin_panel_support(message: Message):
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="⚙️ Панель Управления (Mini App)", web_app=WebAppInfo(url=admin_url))]
     ])
-    await message.answer("🖥️ <b>SOULDAWN SUPPORT — Панель оператора тикетов:</b>", parse_mode="HTML", reply_markup=kb)
+    await message.answer("🖥️ <b>SOULDAWN — Панель оператора тикетов:</b>", parse_mode="HTML", reply_markup=kb)
 
 @router.callback_query(F.data.startswith("ticket:reply:"))
 async def handle_operator_reply_click(callback: CallbackQuery, state: FSMContext):
     ticket_id = callback.data.split(":")[-1]
     await state.update_data(ticket_id=ticket_id)
     await state.set_state(ReplyStates.waiting_for_reply_text)
-    await callback.message.answer(f"✍️ <b>Введите text ответа для тикета</b> <code>{ticket_id}</code>:", parse_mode="HTML")
+    await callback.message.answer(f"✍️ <b>Введите текст ответа для тикета</b> <code>{ticket_id}</code>:", parse_mode="HTML")
     await callback.answer()
 
 @router.message(ReplyStates.waiting_for_reply_text)

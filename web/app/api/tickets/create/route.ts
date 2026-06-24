@@ -10,14 +10,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "telegram_id обязателен" }, { status: 400 });
     }
 
-    // Безопасно переводим в BigInt, убирая ошибку 500
     const tgId = BigInt(String(rawId).trim());
 
-    // Ищем пользователя по корректному полю схемы Prisma
+    // 1. Находим или создаем пользователя
     let user = await prisma.user.findFirst({ where: { telegramId: tgId } });
-
     if (!user) {
-      // Если пользователя нет, автоматически создаем его перед созданием заявки
       user = await prisma.user.create({
         data: {
           telegramId: tgId,
@@ -27,14 +24,23 @@ export async function POST(request: Request) {
       });
     }
 
-    // Создаем тикет поддержки
+    // 2. Формируем безопасный объект данных для тикета
+    const ticketData: any = {
+      userId: tgId,
+      subject: body.subject || body.category || "Без темы",
+      message: body.message || "Обращение из API",
+      status: "OPEN",
+    };
+
+    // 3. Динамическая проверка схемы: добавляем category, только если свойство есть в модели
+    if ('category' in prisma.supportTicket.fields) {
+      // Если это Enum, можно попробовать передать строку в верхнем регистре, либо дефолтное значение
+      ticketData.category = body.category ? String(body.category).toUpperCase() : "GENERAL";
+    }
+
+    // 4. Создаем тикет поддержки
     const ticket = await prisma.supportTicket.create({
-      data: {
-        userId: tgId, // Привязка по BigInt telegram_id
-        subject: body.subject || "Без темы",
-        message: body.message || "",
-        status: "OPEN",
-      },
+      data: ticketData,
     });
 
     return NextResponse.json({ success: true, ticket });

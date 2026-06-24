@@ -38,7 +38,7 @@ export default function Header() {
           : "bg-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-6 md:px-12 h-16 md:h-20 grid grid-cols-[1fr_auto_1fr] items-center">
+      <div className="max-w-7xl mx-auto px-6 md:px-12 h-16 md:h-20 flex items-center justify-between">
         {/* Left — Logo */}
         <Link href="/" className="flex items-center gap-2 justify-self-start">
           <span className="text-lg md:text-xl font-black tracking-superwide uppercase text-text">
@@ -50,7 +50,7 @@ export default function Header() {
         </Link>
 
         {/* Center — Navigation */}
-        <nav className="hidden md:flex items-center gap-10 justify-self-center">
+        <nav className="hidden md:flex items-center gap-10 absolute left-1/2 -translate-x-1/2">
           {navLinks.map((link) =>
             link.external ? (
               <a

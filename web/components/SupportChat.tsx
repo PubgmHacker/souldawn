@@ -14,22 +14,18 @@ export default function SupportChat() {
   const [loading, setLoading] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [telegramId, setTelegramId] = useState<string | null>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    async function checkUserSession() {
-      try {
-        const res = await fetch("/api/auth/me");
-        if (res.ok) {
-          const data = await res.json();
-          if (data && (data.telegram_id || data.telegramId)) {
-            setTelegramId(String(data.telegram_id || data.telegramId));
-          }
+    if (!isOpen) return;
+    fetch("/api/auth/me")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.telegram_id || data?.telegramId) {
+          setTelegramId(String(data.telegram_id || data.telegramId));
         }
-      } catch (err) { console.error(err); } finally { setIsAuthLoading(false); }
-    }
-    if (isOpen) checkUserSession();
+      })
+      .catch(() => {});
   }, [isOpen]);
 
   const loadMessages = async (ticketId: string) => {
@@ -109,14 +105,7 @@ export default function SupportChat() {
           </div>
 
           <div className="flex-1 p-3 overflow-y-auto text-xs flex flex-col">
-            {isAuthLoading ? (
-              <div className="m-auto text-[10px] text-zinc-500 uppercase tracking-widest animate-pulse">// ПРОВЕРКА_СЕССИИ...</div>
-            ) : !telegramId ? (
-              <div className="m-auto text-center space-y-4 p-2">
-                <p className="text-[10px] text-zinc-400 uppercase tracking-wider leading-relaxed">🔒 Для синхронизации чата с Telegram и Mini App, пожалуйста, войдите в свой Личный Кабинет на сайте через Telegram.</p>
-                <a href="/profile" className="inline-block bg-transparent border border-amber-500 text-amber-500 font-black text-[10px] tracking-widest px-4 py-3 uppercase hover:bg-amber-500 hover:text-black transition-all rounded-sm text-none">[ Войти в профиль ]</a>
-              </div>
-            ) : activeTicket ? (
+            {activeTicket ? (
               <div className="flex flex-col h-full justify-between flex-1">
                 <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[240px]">
                   <div className="bg-zinc-950 p-2 border border-zinc-900 text-zinc-400 border-l-2 border-l-amber-500 mb-2"><span className="text-[8px] block text-zinc-600 uppercase">// Запрос:</span>{activeTicket.message}</div>

@@ -19,10 +19,11 @@
   --text: #F2EEE9;
   --text-dim: #B7B2AC;
   --muted: #7C7C85;
-  --accent: #E8B87A;
-  --accent-warm: #D4915C;
-  --accent-deep: #A86A3D;
-  --accent-bright: #F5D0A3;
+  /* Металлик: ртуть/хром — холодный блик без золота */
+  --accent: #C8C8D0;
+  --accent-warm: #A0A0B0;
+  --accent-deep: #707080;
+  --accent-bright: #E8E8F0;
   --steel: #8A8F98;
   --line: rgba(242,238,233,0.08);
   --line-strong: rgba(242,238,233,0.14);
@@ -68,12 +69,12 @@
   .metal-text {
     background: linear-gradient(
       100deg,
-      #B7B2AC 0%,
-      #F2EEE9 25%,
-      #F5D0A3 45%,
-      #E8B87A 55%,
-      #D4915C 70%,
-      #F2EEE9 100%
+      #707080 0%,
+      #E8E8F0 20%,
+      #ffffff 40%,
+      #C8C8D0 55%,
+      #A0A0B0 70%,
+      #E8E8F0 100%
     );
     background-size: 200% auto;
     -webkit-background-clip: text;

@@ -7,7 +7,7 @@
  * Параллакс секции при скролле через useScroll/useTransform.
  */
 import { useRef, useState } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { EASE } from "@/lib/motion";
 import ProductCard from "./ProductCard";
 import ProductModal from "./ProductModal";
@@ -17,12 +17,7 @@ import type { Product } from "@/lib/types";
 export default function ScrollCarousel() {
   const { products } = useProducts();
   const [selected, setSelected] = useState<Product | null>(null);
-  const ref = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
-
-  // Параллакс всей секции
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], [30, -30]);
 
   const items = products.slice(0, 8);
 
@@ -33,8 +28,8 @@ export default function ScrollCarousel() {
   };
 
   return (
-    <section ref={ref} className="section-padding bg-bg overflow-hidden">
-      <motion.div style={{ y }}>
+    <section className="section-padding bg-bg overflow-hidden">
+      <div>
         <div className="max-w-7xl mx-auto">
           {/* Заголовок */}
           <motion.div
@@ -69,7 +64,7 @@ export default function ScrollCarousel() {
                 →
               </button>
             </div>
-          </motion.div>
+          </div>
 
           {/* 3D-карусель */}
           <div
@@ -89,11 +84,11 @@ export default function ScrollCarousel() {
                 style={{ transformStyle: "preserve-3d", perspective: 900 }}
               >
                 <ProductCard product={product} onProductClick={(p) => setSelected(p)} />
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {selected && <ProductModal product={selected} onClose={() => setSelected(null)} />}
     </section>

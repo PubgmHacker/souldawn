@@ -88,7 +88,7 @@ function AuthForm() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Имя (необязательно)"
-            className="w-full bg-surface border border-white/10 px-4 py-3 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-accent/40 transition-colors"
+            style={{ fontSize: "16px" }} className="w-full bg-surface border border-white/10 px-4 py-3 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-accent/40 transition-colors"
           />
         )}
         <input
@@ -97,7 +97,7 @@ function AuthForm() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
           required
-          className="w-full bg-surface border border-white/10 px-4 py-3 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-accent/40 transition-colors"
+          style={{ fontSize: "16px" }} className="w-full bg-surface border border-white/10 px-4 py-3 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-accent/40 transition-colors"
         />
         <input
           type="password"
@@ -105,7 +105,7 @@ function AuthForm() {
           onChange={(e) => setPassword(e.target.value)}
           placeholder={tab === "register" ? "Пароль (мин. 8 символов)" : "Пароль"}
           required
-          className="w-full bg-surface border border-white/10 px-4 py-3 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-accent/40 transition-colors"
+          style={{ fontSize: "16px" }} className="w-full bg-surface border border-white/10 px-4 py-3 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-accent/40 transition-colors"
         />
         {error && (
           <p className="text-xs text-accent-red text-center">{error}</p>

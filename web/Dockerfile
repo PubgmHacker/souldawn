@@ -10,4 +10,4 @@ EXPOSE 3000
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV DATABASE_URL=file:/data/souldawn.db
-CMD ["sh", "-c", "bunx prisma db push --accept-data-loss --skip-generate && bun .next/standalone/server.js"]
+CMD ["sh", "-c", "bunx prisma generate && bun .next/standalone/server.js"]

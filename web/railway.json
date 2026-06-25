@@ -5,7 +5,7 @@
     "buildCommand": "bun install && bunx prisma generate && bun run build"
   },
   "deploy": {
-    "startCommand": "sh -c 'bunx prisma db push --accept-data-loss --skip-generate && bun .next/standalone/server.js'",
+    "startCommand": "sh -c 'bunx prisma generate && bun .next/standalone/server.js'",
     "healthcheckPath": "/",
     "healthcheckTimeout": 30,
     "restartPolicyType": "ON_FAILURE",

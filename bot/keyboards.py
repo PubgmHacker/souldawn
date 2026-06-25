@@ -12,6 +12,7 @@ def main_kb() -> InlineKeyboardMarkup:
 
     if MINIAPP_URL:
         rows.append([InlineKeyboardButton(text="🛍️  МАГАЗИН", web_app=WebAppInfo(url=MINIAPP_URL))])
+        rows.append([InlineKeyboardButton(text="❓ FAQ", web_app=WebAppInfo(url=f"{MINIAPP_URL}/faq"))])
 
     info_row = []
     if SITE_URL:

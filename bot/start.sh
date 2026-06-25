@@ -8,7 +8,5 @@ DB_EXIT=$?
 if [ $DB_EXIT -ne 0 ]; then
     echo "!!! DB CHECK FAILED (exit code $DB_EXIT) — starting bot anyway for debugging... !!!"
 fi
-echo "Step 1.5: Column check..."
-python debug_columns.py
 echo "Step 2: Starting bot..."
 exec python bot.py

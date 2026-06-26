@@ -75,6 +75,27 @@ export async function getAuthUser(request: NextRequest): Promise<AuthUser | null
   if (!token) return null;
   const payload = verifyToken(token);
   if (!payload?.userId) return null;
+
+  // Re-check admin role from DB to catch stale JWT roles
+  try {
+    const { db } = await import("@/lib/db");
+    const dbUser = await db.user.findUnique({
+      where: { id: payload.userId },
+      select: { role: true, isAdmin: true, telegramId: true },
+    });
+    if (dbUser) {
+      const role = dbUser.role || "user";
+      return {
+        userId: payload.userId,
+        telegramId: payload.telegram_id ?? dbUser.telegramId ?? undefined,
+        role,
+        isAdmin: role === "admin" || role === "owner" || !!dbUser.isAdmin,
+      };
+    }
+  } catch {
+    // DB unavailable — fall back to JWT claims
+  }
+
   return {
     userId: payload.userId,
     telegramId: payload.telegram_id,

@@ -54,7 +54,7 @@ def admin_panel_kb() -> InlineKeyboardMarkup:
         rows.append([
             InlineKeyboardButton(
                 text="🖥  Открыть полную панель",
-                web_app=WebAppInfo(url=f"{MINIAPP_URL}?view=admin"),
+                web_app=WebAppInfo(url=f"{MINIAPP_URL.rstrip(chr(47))}/admin"),
             )
         ])
     return InlineKeyboardMarkup(inline_keyboard=rows)

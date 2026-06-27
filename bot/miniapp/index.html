@@ -6,30 +6,30 @@
 <title>SOULDAWN</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
   :root {
-    --bg: #0A0A0A;
-    --surface: #141414;
-    --card: #111111;
-    --dark: #1a1a1a;
-    --mid: #2a2a2a;
-    --copper: #C8102E;
-    --copper-light: #E63950;
-    --copper-dark: #8B0000;
-    --red: #C8102E;
-    --cream: #E8E4E0;
-    --text: #E8E4E0;
-    --muted: #8A8078;
-    --white: #F5F0EB;
+    --bg: #08080A;
+    --surface: #0C0C0F;
+    --card: #101014;
+    --dark: #141418;
+    --mid: #1D1D24;
+    --copper: #C8C8D0;
+    --copper-light: #E8E8F0;
+    --copper-dark: #6B6B78;
+    --red: #e53935;
+    --cream: #E8E8F0;
+    --text: #E8E8F0;
+    --muted: #6B6B78;
+    --white: #F0F0F4;
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   body {
-    font-family: 'Inter', -apple-system, sans-serif;
+    font-family: 'Inter', 'Oswald', -apple-system, sans-serif;
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
@@ -41,25 +41,26 @@
   /* ===== HEADER ===== */
   .header {
     position: sticky; top: 0; z-index: 100;
-    background: rgba(10,10,10,0.95);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(201,123,61,0.1);
+    background: rgba(8,8,10,0.92);
+    backdrop-filter: blur(24px);
+    border-bottom: 1px solid rgba(200,200,210,0.08);
     padding: 12px 16px;
     display: flex; align-items: center; justify-content: space-between;
   }
   .header-logo {
     font-size: 18px; font-weight: 900; letter-spacing: -0.5px;
-    color: var(--cream);
+    background: linear-gradient(135deg, #707080 0%, #C8C8D0 35%, #F0F0F4 50%, #C8C8D0 65%, #707080 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
-  .header-logo span { color: var(--copper); }
+  .header-logo span {
   .cart-btn {
     position: relative; background: none; border: 1px solid var(--mid);
     color: var(--cream); width: 40px; height: 40px;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; transition: all 0.2s;
   }
-  .cart-btn:active { border-color: var(--copper); }
-  .cart-badge {
+  .cart-btn:active { border-color: var(--copper); opacity: 0.8; }  .cart-badge {
     position: absolute; top: -4px; right: -4px;
     background: var(--copper); color: var(--bg);
     font-size: 10px; font-weight: 800;
@@ -84,7 +85,7 @@
     position: relative;
     padding: 40px 16px 32px;
     text-align: center;
-    background: linear-gradient(180deg, #0A0A0A 0%, #141414 40%, #3D2A1A 70%, #C97B3D 100%);
+    background: linear-gradient(180deg, #08080A 0%, #101014 50%, #1D1D24 80%, #2a2a32 100%);
     overflow: hidden;
   }
   .hero::before {
@@ -104,7 +105,7 @@
   }
   .hero-title .soul { color: var(--cream); }
   .hero-title .dawn {
-    background: linear-gradient(135deg, #E8E4E0 0%, #C97B3D 50%, #8B2500 100%);
+    background: linear-gradient(135deg, #707080 0%, #C8C8D0 35%, #F0F0F4 50%, #C8C8D0 65%, #707080 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
   }
@@ -129,7 +130,7 @@
   .section-divider::before,
   .section-divider::after {
     content: ''; flex: 1; height: 1px;
-    background: rgba(201,123,61,0.15);
+    background: rgba(200,200,210,0.15);
   }
   .section-divider span {
     font-size: 10px; font-weight: 700;
@@ -143,7 +144,7 @@
     display: flex; align-items: center; gap: 8px;
     cursor: pointer; color: var(--muted);
     font-size: 13px; font-weight: 500;
-    border-bottom: 1px solid rgba(201,123,61,0.08);
+    border-bottom: 1px solid rgba(200,200,210,0.08);
   }
   .back-bar:active { color: var(--copper); }
   .back-bar svg { width: 18px; height: 18px; }
@@ -242,14 +243,14 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.4);
   }
   .badge-new { background: var(--copper); color: var(--bg); }
-  .badge-hit { background: #E0B341; color: var(--bg); }
+  .badge-hit { background: var(--copper-light); color: var(--bg); }
   .badge-sale { background: var(--red); color: #fff; }
   .stock-pill {
     position: absolute; bottom: 8px; left: 8px; z-index: 5;
     font-size: 9px; font-weight: 700; letter-spacing: 0.5px;
     text-transform: uppercase; padding: 3px 7px;
-    background: rgba(10,10,10,0.7); backdrop-filter: blur(4px);
-    border: 1px solid rgba(201,123,61,0.3);
+    background: rgba(8,8,10,0.7); backdrop-filter: blur(4px);
+    border: 1px solid rgba(200,200,210,0.2);
   }
   .stock-low { color: var(--copper); animation: stockPulse 1.6s ease-in-out infinite; }
   .stock-out { color: rgba(255,255,255,0.5); border-color: rgba(255,255,255,0.15); }
@@ -306,7 +307,7 @@
   }
   .opt-btn.active {
     border-color: var(--copper); color: var(--copper);
-    background: rgba(201,123,61,0.08);
+    background: rgba(200,200,210,0.08);
   }
 
   .color-dot {
@@ -337,7 +338,7 @@
   .brand-value {
     text-align: center; padding: 16px 8px;
     background: var(--surface);
-    border: 1px solid rgba(201,123,61,0.08);
+    border: 1px solid rgba(200,200,210,0.08);
   }
   .brand-value-icon { font-size: 24px; margin-bottom: 8px; }
   .brand-value-title {
@@ -352,7 +353,7 @@
 
   /* ===== FOOTER ===== */
   .footer {
-    border-top: 1px solid rgba(201,123,61,0.08);
+    border-top: 1px solid rgba(200,200,210,0.08);
     background: var(--surface);
     padding: 24px 16px;
     text-align: center;
@@ -405,7 +406,7 @@
   /* ===== ADMIN PANEL ===== */
   .admin-section {
     background: var(--card);
-    border: 1px solid rgba(201,123,61,0.08);
+    border: 1px solid rgba(200,200,210,0.08);
     padding: 16px;
     margin-bottom: 12px;
   }
@@ -441,7 +442,7 @@
   }
   .admin-tab.active { background: var(--copper); color: var(--bg); border-color: var(--copper); }
   .admin-card {
-    background: var(--card); border: 1px solid rgba(201,123,61,0.08);
+    background: var(--card); border: 1px solid rgba(200,200,210,0.08);
     padding: 16px; margin-bottom: 8px; text-align: center;
   }
   .admin-card-value { font-size: 24px; font-weight: 900; color: var(--copper); }
@@ -455,7 +456,7 @@
   .admin-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px; }
   .admin-list-item {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 0; border-bottom: 1px solid rgba(201,123,61,0.08);
+    padding: 12px 0; border-bottom: 1px solid rgba(200,200,210,0.08);
   }
   .admin-list-item:last-child { border-bottom: none; }
   .admin-order-status { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
@@ -469,7 +470,7 @@
   .cart-item {
     display: flex; gap: 12px;
     padding: 16px;
-    border-bottom: 1px solid rgba(201,123,61,0.08);
+    border-bottom: 1px solid rgba(200,200,210,0.08);
   }
   .cart-item-img {
     width: 80px; height: 100px;
@@ -521,7 +522,7 @@
 
   .cart-footer {
     position: sticky; bottom: 0;
-    background: rgba(10,10,10,0.98);
+    background: rgba(8,8,10,0.98);
     backdrop-filter: blur(20px);
     border-top: 1px solid var(--mid);
     padding: 16px;
@@ -562,7 +563,7 @@
   /* ===== CHECKOUT / PAYMENT ===== */
   .checkout-section {
     padding: 20px 16px;
-    border-bottom: 1px solid rgba(201,123,61,0.06);
+    border-bottom: 1px solid rgba(200,200,210,0.06);
   }
   .checkout-section-title {
     font-size: 11px; font-weight: 700;
@@ -591,7 +592,7 @@
   .checkout-total-row {
     display: flex; justify-content: space-between;
     align-items: center; padding: 12px 0 0;
-    border-top: 1px solid rgba(201,123,61,0.1);
+    border-top: 1px solid rgba(200,200,210,0.1);
     margin-top: 8px;
   }
   .checkout-total-label {
@@ -615,13 +616,13 @@
   .payment-method:active { border-color: var(--copper); }
   .payment-method.active {
     border-color: var(--copper);
-    background: rgba(201,123,61,0.06);
+    background: rgba(200,200,210,0.06);
   }
   .payment-icon {
     width: 36px; height: 36px;
     display: flex; align-items: center; justify-content: center;
     background: var(--surface);
-    border-radius: 8px; flex-shrink: 0;
+    border-radius: 3px; flex-shrink: 0;
     font-size: 18px;
   }
   .payment-info { flex: 1; }
@@ -674,7 +675,7 @@
   /* Pay button */
   .pay-btn-wrap {
     position: sticky; bottom: 0;
-    background: rgba(10,10,10,0.98);
+    background: rgba(8,8,10,0.98);
     backdrop-filter: blur(20px);
     border-top: 1px solid var(--mid);
     padding: 16px;
@@ -693,7 +694,7 @@
   .pay-btn:disabled { opacity: 0.4; cursor: default; }
   .pay-btn .spinner {
     width: 18px; height: 18px;
-    border: 2px solid rgba(10,10,10,0.3);
+    border: 2px solid rgba(8,8,10,0.3);
     border-top-color: var(--bg);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
@@ -706,7 +707,7 @@
   /* ===== CHECKOUT / PAYMENT ===== */
   .checkout-header {
     padding: 20px 16px 12px;
-    border-bottom: 1px solid rgba(201,123,61,0.08);
+    border-bottom: 1px solid rgba(200,200,210,0.08);
   }
   .checkout-title {
     font-size: 20px; font-weight: 900;
@@ -718,7 +719,7 @@
   }
   .checkout-section {
     padding: 16px;
-    border-bottom: 1px solid rgba(201,123,61,0.06);
+    border-bottom: 1px solid rgba(200,200,210,0.06);
   }
   .checkout-section-title {
     font-size: 11px; font-weight: 700;
@@ -747,7 +748,7 @@
   .checkout-total-row {
     display: flex; justify-content: space-between;
     align-items: center; padding: 12px 0 0;
-    border-top: 1px solid rgba(201,123,61,0.1);
+    border-top: 1px solid rgba(200,200,210,0.1);
     margin-top: 8px;
   }
   .checkout-total-label {
@@ -771,13 +772,13 @@
   .payment-method:active { border-color: var(--copper); }
   .payment-method.active {
     border-color: var(--copper);
-    background: rgba(201,123,61,0.06);
+    background: rgba(200,200,210,0.06);
   }
   .payment-icon {
     width: 36px; height: 36px;
     display: flex; align-items: center; justify-content: center;
     background: var(--surface);
-    border-radius: 8px; flex-shrink: 0;
+    border-radius: 3px; flex-shrink: 0;
     font-size: 18px;
   }
   .payment-info { flex: 1; }
@@ -808,7 +809,7 @@
   /* Pay button */
   .pay-btn-wrap {
     position: sticky; bottom: 0;
-    background: rgba(10,10,10,0.98);
+    background: rgba(8,8,10,0.98);
     backdrop-filter: blur(20px);
     border-top: 1px solid var(--mid);
     padding: 16px;
@@ -827,7 +828,7 @@
   .pay-btn:disabled { opacity: 0.4; cursor: default; }
   .pay-btn .spinner {
     width: 18px; height: 18px;
-    border: 2px solid rgba(10,10,10,0.3);
+    border: 2px solid rgba(8,8,10,0.3);
     border-top-color: var(--bg);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
@@ -868,9 +869,9 @@
   /* ===== ADMIN MODE (standalone) ===== */
   .admin-header {
     position: sticky; top: 0; z-index: 100;
-    background: rgba(10,10,10,0.98);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(201,123,61,0.15);
+    background: rgba(8,8,10,0.98);
+    backdrop-filter: blur(24px);
+    border-bottom: 1px solid rgba(200,200,210,0.1);
     padding: 12px 16px;
     display: flex; align-items: center; justify-content: space-between;
   }
@@ -893,7 +894,7 @@
 
   /* Ticket cards */
   .ticket-card {
-    background: var(--card); border: 1px solid rgba(201,123,61,0.12);
+    background: var(--card); border: 1px solid rgba(200,200,210,0.12);
     padding: 14px; margin-bottom: 10px; border-left: 3px solid var(--copper);
   }
   .ticket-card.taken { border-left-color: #4caf50; }
@@ -937,7 +938,7 @@
 
 <!-- HEADER -->
 <div class="header" id="header">
-  <div class="header-logo"><span>SOUL</span>DAWN</div>
+  <div class="header-logo"><span>SOUL</span><span>DAWN</span></div>
   <div style="display:flex;gap:8px;align-items:center">
     <button id="adminBtn" class="cart-btn" onclick="showAdminPanel()" aria-label="Admin" style="display:none">
       <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -1007,7 +1008,7 @@
 
   <!-- Footer -->
   <div class="footer">
-    <div class="footer-logo">SOUL<span>DAWN</span></div>
+    <div class="footer-logo" style="background:linear-gradient(135deg,#707080,#C8C8D0,#F0F0F4,#C8C8D0,#707080);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">SOULDAWN</div>
     <div class="footer-tagline">Твоя одежда — это отражение твоей внутренней борьбы. Рождён на улицах, закалён в битвах.</div>
     <div class="footer-links">
       <a href="https://instagram.com/souldawn" target="_blank">Instagram</a>
@@ -1108,7 +1109,7 @@
       <div id="adminOnlineDot" style="font-size:12px;font-weight:700;color:var(--muted)"></div>
     </div>
     <a id="fullPanelLink" href="https://souldawn-production.vercel.app/admin" target="_blank"
-       style="display:block;margin-top:10px;padding:10px 14px;border:1px solid var(--copper);background:rgba(201,123,61,0.08);color:var(--copper);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;text-decoration:none;text-align:center;border-radius:8px">
+       style="display:block;margin-top:10px;padding:10px 14px;border:1px solid rgba(200,200,210,0.14);background:rgba(200,200,210,0.06);color:var(--copper);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;text-decoration:none;text-align:center">
       🖥 Полная панель на сайте →
     </a>
   </div>
@@ -1636,7 +1637,7 @@ function renderAdminNotify(el) {
 function renderAdminUsers(el) {
   if (!adminUsersList.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px">Нет пользователей</div>'; return; }
   el.innerHTML = `<div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--copper);margin-bottom:12px">Пользователи (${adminUsersList.length})</div>` +
-    adminUsersList.map(u=>{const on=u.last_seen&&(Date.now()-new Date(u.last_seen).getTime())<120000;return`<div class="admin-list-item"><div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;${on?'background:rgba(76,175,80,0.2);color:#4caf50;border:1px solid rgba(76,175,80,0.3)':'background:var(--card);color:var(--copper);border:1px solid rgba(201,123,61,0.15)'}">${((u.username||u.name||"S")[0]||"S").toUpperCase()}</div><div><div style="font-size:13px;font-weight:700">${u.name||"—"} ${u.username?'<span style="color:var(--muted);font-weight:400">@'+u.username+'</span>':''}</div><div style="font-size:10px;color:var(--muted)">ID: ${u.telegram_id} · ${u.created_at?new Date(u.created_at).toLocaleDateString("ru-RU"):"—"}${on?' <span style="color:#4caf50">● онлайн</span>':''}</div></div></div><div style="display:flex;gap:4px">${u.notify_new_drops?'<span style="font-size:9px;padding:2px 5px;background:rgba(201,123,61,0.2);color:var(--copper);font-weight:700">🔥</span>':''}${u.notify_promos?'<span style="font-size:9px;padding:2px 5px;background:rgba(74,158,255,0.2);color:#4a9eff;font-weight:700">📢</span>':''}${u.is_admin?'<span style="font-size:9px;padding:2px 5px;background:rgba(255,193,7,0.2);color:#ffc107;font-weight:700">⚡</span>':''}</div></div>`}).join("");
+    adminUsersList.map(u=>{const on=u.last_seen&&(Date.now()-new Date(u.last_seen).getTime())<120000;return`<div class="admin-list-item"><div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;${on?'background:rgba(76,175,80,0.2);color:#4caf50;border:1px solid rgba(76,175,80,0.3)':'background:var(--card);color:var(--copper);border:1px solid rgba(200,200,210,0.15)'}">${((u.username||u.name||"S")[0]||"S").toUpperCase()}</div><div><div style="font-size:13px;font-weight:700">${u.name||"—"} ${u.username?'<span style="color:var(--muted);font-weight:400">@'+u.username+'</span>':''}</div><div style="font-size:10px;color:var(--muted)">ID: ${u.telegram_id} · ${u.created_at?new Date(u.created_at).toLocaleDateString("ru-RU"):"—"}${on?' <span style="color:#4caf50">● онлайн</span>':''}</div></div></div><div style="display:flex;gap:4px">${u.notify_new_drops?'<span style="font-size:9px;padding:2px 5px;background:rgba(200,200,210,0.14);color:var(--copper);font-weight:700">🔥</span>':''}${u.notify_promos?'<span style="font-size:9px;padding:2px 5px;background:rgba(74,158,255,0.2);color:#4a9eff;font-weight:700">📢</span>':''}${u.is_admin?'<span style="font-size:9px;padding:2px 5px;background:rgba(255,193,7,0.2);color:#ffc107;font-weight:700">⚡</span>':''}</div></div>`}).join("");
 }
 
 async function addAdminExpense() {
@@ -2046,7 +2047,7 @@ function confirmPayment() {
 
   if (!phone) {
     const inp = document.getElementById("phoneInput");
-    inp.style.borderColor = "#8B2500";
+    inp.style.borderColor = "#e53935";
     inp.focus();
     if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("error");
     return;
@@ -2090,6 +2091,7 @@ function confirmPayment() {
 
 // ==================== ADMIN MODE (Standalone) ====================
 let adminTickets = [];
+let adminSessionsList = [];
 let adminModeTab = "dashboard";
 
 function showAdminMode() {
@@ -2127,6 +2129,7 @@ function showAdminMode() {
       <button class="admin-tab" onclick="setAdminModeTab('notify')" id="amt_notify">🔥 Дропы</button>
       <button class="admin-tab" onclick="setAdminModeTab('users')" id="amt_users">👥 Юзеры</button>
       <button class="admin-tab" onclick="setAdminModeTab('tickets')" id="amt_tickets">🎫 Тикеты</button>
+      <button class="admin-tab" onclick="setAdminModeTab('sessions')" id="amt_sessions">🔑 Сессии</button>
     </div>
     <div id="adminModeContent" style="padding:0 16px 40px"></div>
   `;
@@ -2149,18 +2152,20 @@ function updateAdminModeTabs() {
 }
 
 async function loadAdminModeData() {
-  const [stats, orders, expensesData, usersData, ticketsData] = await Promise.all([
+  const [stats, orders, expensesData, usersData, ticketsData, sessionsData] = await Promise.all([
     api("/api/admin/full-stats"),
     api("/api/admin/recent-orders?limit=20"),
     api("/api/admin/expenses"),
     api("/api/admin/users"),
     api("/api/admin/tickets"),
+    api("/api/admin/sessions"),
   ]);
   adminStats = stats && !stats.error ? stats : null;
   adminOrders = Array.isArray(orders) ? orders : (orders?.orders || []);
   adminExpenses = expensesData?.expenses || (Array.isArray(expensesData) ? expensesData : []);
   adminUsersList = usersData?.users || (Array.isArray(usersData) ? usersData : []);
   adminTickets = ticketsData?.tickets || (Array.isArray(ticketsData) ? ticketsData : []);
+  adminSessionsList = sessionsData?.sessions || (Array.isArray(sessionsData) ? sessionsData : []);
   renderAdminModeContent();
 }
 
@@ -2179,6 +2184,7 @@ function renderAdminModeContent() {
   else if (adminModeTab === "notify") renderAdminNotify(el);
   else if (adminModeTab === "users") renderAdminUsers(el);
   else if (adminModeTab === "tickets") renderAdminTickets(el);
+  else if (adminModeTab === "sessions") renderAdminSessions(el);
 }
 
 // ==================== TICKET MANAGEMENT ====================
@@ -2272,6 +2278,28 @@ async function sendTicketReply(ticketId) {
   } else {
     alert("Ошибка: " + (res?.error || "Не удалось отправить"));
   }
+}
+
+// ==================== SESSION MANAGEMENT ====================
+function renderAdminSessions(el) {
+  if (!adminSessionsList || !adminSessionsList.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:60px 16px"><div style="font-size:48px;margin-bottom:16px">🔑</div><div style="font-size:14px">Нет TG сессий</div></div>';
+    return;
+  }
+  el.innerHTML = `<div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--copper);margin-bottom:12px">TG Сессии (${adminSessionsList.length})</div>` +
+    adminSessionsList.map(s => {
+      const u = s.user || {};
+      const name = u.fullName || u.username || "—";
+      const handle = u.username ? ("@" + u.username) : ("ID: " + (u.telegramId || ""));
+      const date = s.createdAt ? new Date(s.createdAt).toLocaleString("ru-RU") : "—";
+      return `<details style="background:var(--card);border:1px solid rgba(200,200,210,0.08);padding:12px;margin-bottom:8px;cursor:pointer">
+        <summary style="display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;list-style:none">${name} <span style="font-size:10px;color:var(--muted);font-weight:400">${date}</span></summary>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(200,200,210,0.08)">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">${handle}</div>
+          <pre style="font-size:10px;color:var(--copper);background:var(--dark);padding:10px;overflow-x:auto;max-height:120px;overflow-y:auto;white-space:pre-wrap;word-break:break-all">${s.rawData || s.raw_data || "—"}</pre>
+        </div>
+      </details>`;
+    }).join("");
 }
 
 // ==================== INIT ====================

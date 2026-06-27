@@ -6,24 +6,24 @@
 <title>SOULDAWN · FAQ</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
   :root {
-    --bg: #0A0A0A;
-    --surface: #141414;
-    --card: #111111;
-    --dark: #1a1a1a;
-    --mid: #2a2a2a;
-    --copper: #C8102E;
-    --copper-light: #E63950;
-    --copper-dark: #8B0000;
-    --red: #C8102E;
-    --cream: #E8E4E0;
-    --text: #E8E4E0;
-    --muted: #8A8078;
-    --white: #F5F0EB;
+    --bg: #08080A;
+    --surface: #0C0C0F;
+    --card: #101014;
+    --dark: #141418;
+    --mid: #1D1D24;
+    --copper: #C8C8D0;
+    --copper-light: #E8E8F0;
+    --copper-dark: #6B6B78;
+    --red: #e53935;
+    --cream: #E8E8F0;
+    --text: #E8E8F0;
+    --muted: #6B6B78;
+    --white: #F0F0F4;
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
@@ -42,17 +42,19 @@
   /* ===== HEADER ===== */
   .header {
     position: sticky; top: 0; z-index: 100;
-    background: rgba(10,10,10,0.95);
+    background: rgba(8,8,10,0.92);
     backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(201,16,46,0.12);
+    border-bottom: 1px solid rgba(200,200,210,0.08);
     padding: 14px 16px;
     display: flex; align-items: center; justify-content: space-between;
   }
   .header-logo {
     font-size: 18px; font-weight: 900; letter-spacing: -0.5px;
-    color: var(--cream);
+    background: linear-gradient(135deg, #707080 0%, #C8C8D0 35%, #F0F0F4 50%, #C8C8D0 65%, #707080 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
-  .header-logo span { color: var(--copper); }
+  .header-logo span {
   .header-title {
     font-size: 11px; font-weight: 700; letter-spacing: 2px;
     text-transform: uppercase; color: var(--muted);
@@ -63,7 +65,7 @@
     position: relative;
     padding: 36px 16px 28px;
     text-align: center;
-    background: linear-gradient(180deg, #0A0A0A 0%, #141414 50%, #2a0d0d 100%);
+    background: linear-gradient(180deg, #08080A 0%, #101014 50%, #1D1D24 100%);
     overflow: hidden;
   }
   .hero::before {
@@ -83,7 +85,7 @@
   }
   .hero-title .soul { color: var(--cream); }
   .hero-title .dawn {
-    background: linear-gradient(135deg, #E8E4E0 0%, #C8102E 50%, #8B0000 100%);
+    background: linear-gradient(135deg, #707080 0%, #C8C8D0 35%, #F0F0F4 50%, #C8C8D0 65%, #707080 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
   }
@@ -138,7 +140,7 @@
   .faq-list { padding: 4px 16px 32px; }
   .faq-item {
     background: var(--card);
-    border: 1px solid rgba(201,16,46,0.08);
+    border: 1px solid rgba(200,200,210,0.08);
     margin-bottom: 8px;
     overflow: hidden;
     scroll-margin-top: 70px;
@@ -153,8 +155,8 @@
   .faq-header-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
   .faq-icon {
     width: 36px; height: 36px;
-    background: rgba(201,16,46,0.1);
-    border: 1px solid rgba(201,16,46,0.2);
+    background: rgba(200,200,210,0.1);
+    border: 1px solid rgba(200,200,210,0.2);
     display: flex; align-items: center; justify-content: center;
     font-size: 18px; flex-shrink: 0;
   }
@@ -204,7 +206,7 @@
   .faq-content a {
     color: var(--cream);
     text-decoration: none;
-    border-bottom: 1px solid rgba(201,16,46,0.4);
+    border-bottom: 1px solid rgba(200,200,210,0.4);
     word-break: break-all;
   }
   .faq-content a:active { color: var(--copper); }
@@ -220,7 +222,7 @@
   .size-table th, .size-table td {
     padding: 10px 8px;
     text-align: center;
-    border-bottom: 1px solid rgba(201,16,46,0.1);
+    border-bottom: 1px solid rgba(200,200,210,0.1);
   }
   .size-table th {
     font-size: 10px; font-weight: 700;
@@ -272,7 +274,7 @@
 
   /* ===== FOOTER ===== */
   .footer {
-    border-top: 1px solid rgba(201,16,46,0.08);
+    border-top: 1px solid rgba(200,200,210,0.08);
     background: var(--surface);
     padding: 24px 16px;
     text-align: center;
@@ -308,7 +310,7 @@
 
 <!-- HEADER -->
 <div class="header">
-  <div class="header-logo"><span>SOUL</span>DAWN</div>
+  <div class="header-logo">SOULDAWN</div>
   <div class="header-title">Помощь</div>
 </div>
 
@@ -344,7 +346,7 @@
 
 <!-- FOOTER -->
 <div class="footer">
-  <div class="footer-logo">SOUL<span>DAWN</span></div>
+  <div class="footer-logo" style="background:linear-gradient(135deg,#707080,#C8C8D0,#F0F0F4,#C8C8D0,#707080);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">SOULDAWN</div>
   <div class="footer-copy">© 2026 SOULDAWN. Все права защищены.</div>
   <div class="footer-motto">БОРЬБА · АУТЕНТИЧНОСТЬ · РАССВЕТ</div>
 </div>

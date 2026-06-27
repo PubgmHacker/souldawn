@@ -13,7 +13,7 @@ from config import MINIAPP_URL, FAQ_MINIAPP_URL
 from database import get_or_create_user
 from utils import BANNERS
 from texts import welcome, order_cmd
-from keyboards import main_kb, back_kb
+from keyboards import main_kb, back_kb, _miniapp_url
 
 router = Router()
 
@@ -55,7 +55,7 @@ async def cmd_help(message: Message, state: FSMContext):
 async def cmd_catalog(message: Message, state: FSMContext):
     await state.clear()
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🛒  Открыть каталог", web_app=WebAppInfo(url=MINIAPP_URL))],
+        [InlineKeyboardButton(text="🛒  Открыть каталог", web_app=WebAppInfo(url=_miniapp_url(MINIAPP_URL)))],
         [InlineKeyboardButton(text="←  Меню", callback_data="back_to_menu")],
     ])
     await message.answer_photo(photo=BANNERS["catalog"], caption="SOULDAWN · Каталог\n\nВыбери категорию или открой весь каталог.", reply_markup=kb)
@@ -67,7 +67,7 @@ async def cmd_sizes(message: Message, state: FSMContext):
     # Открываем FAQ миниапп с разделом размеров
     if FAQ_MINIAPP_URL:
         kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="📏  Таблица размеров", web_app=WebAppInfo(url=f"{FAQ_MINIAPP_URL}#sizes"))],
+            [InlineKeyboardButton(text="📏  Таблица размеров", web_app=WebAppInfo(url=_miniapp_url(f"{FAQ_MINIAPP_URL}#sizes")))],
             [InlineKeyboardButton(text="←  Меню", callback_data="back_to_menu")],
         ])
     else:

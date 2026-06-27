@@ -3,8 +3,24 @@ from __future__ import annotations
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
-from config import MINIAPP_URL, FAQ_MINIAPP_URL, SUPPORT_BOT_URL
+from config import MINIAPP_URL, FAQ_MINIAPP_URL, SUPPORT_BOT_URL, SITE_URL
 from utils import _fmt_price
+
+
+def _miniapp_url(url: str) -> str:
+    """Прокидывает ?site=SITE_URL в миниапп, чтобы он знал адрес сайта (API).
+    Миниапп хостится на GitHub Pages, а API — на Railway, поэтому
+    miniapp должен явно знать SITE_URL для запросов к /api/auth и т.д.
+    """
+    if not url:
+        return url
+    if not SITE_URL:
+        return url
+    sep = "&" if "?" in url else "?"
+    # уже содержит site= — не дублируем
+    if "site=" in url:
+        return url
+    return f"{url}{sep}site={SITE_URL}"
 
 
 def main_kb() -> InlineKeyboardMarkup:
@@ -12,12 +28,12 @@ def main_kb() -> InlineKeyboardMarkup:
 
     # Кнопка каталога (WebApp) — главный CTA, отдельной широкой строкой.
     if MINIAPP_URL:
-        rows.append([InlineKeyboardButton(text="🛍️  КАТАЛОГ", web_app=WebAppInfo(url=MINIAPP_URL))])
+        rows.append([InlineKeyboardButton(text="🛍️  КАТАЛОГ", web_app=WebAppInfo(url=_miniapp_url(MINIAPP_URL)))])
 
     # FAQ (WebApp) + Поддержка (инлайн ссылка на саппорт-бот)
     bottom_row = []
     if FAQ_MINIAPP_URL:
-        bottom_row.append(InlineKeyboardButton(text="❓  FAQ", web_app=WebAppInfo(url=FAQ_MINIAPP_URL)))
+        bottom_row.append(InlineKeyboardButton(text="❓  FAQ", web_app=WebAppInfo(url=_miniapp_url(FAQ_MINIAPP_URL))))
     if SUPPORT_BOT_URL:
         bottom_row.append(InlineKeyboardButton(text="💬  Поддержка", url=SUPPORT_BOT_URL))
     if bottom_row:
@@ -47,7 +63,7 @@ def admin_panel_kb() -> InlineKeyboardMarkup:
         rows.append([
             InlineKeyboardButton(
                 text="🖥  Открыть полную панель",
-                web_app=WebAppInfo(url=f"{MINIAPP_URL}?view=admin"),
+                web_app=WebAppInfo(url=_miniapp_url(f"{MINIAPP_URL}?view=admin")),
             )
         ])
     return InlineKeyboardMarkup(inline_keyboard=rows)
@@ -65,7 +81,7 @@ def shop_or_menu_kb() -> InlineKeyboardMarkup:
     при заданном MINIAPP_URL, иначе Telegram отклоняет клавиатуру."""
     rows: list[list[InlineKeyboardButton]] = []
     if MINIAPP_URL:
-        rows.append([InlineKeyboardButton(text="КАТАЛОГ", web_app=WebAppInfo(url=MINIAPP_URL))])
+        rows.append([InlineKeyboardButton(text="КАТАЛОГ", web_app=WebAppInfo(url=_miniapp_url(MINIAPP_URL)))])
     rows.append([InlineKeyboardButton(text="MENU", callback_data="back_to_menu")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 

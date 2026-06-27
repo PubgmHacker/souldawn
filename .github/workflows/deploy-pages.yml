@@ -1,13 +1,22 @@
-name: Deploy to GitHub Pages
+name: Deploy Mini App to GitHub Pages
 
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'bot/miniapp/**'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
   pages: write
   id-token: write
+
+# Разрешаем только один параллельный деплой
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -21,11 +30,15 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        with:
+          # Репо не на корне — Pages будет в /<repo-name>/
+          enablement: true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          # Деплоим ТОЛЬКО содержимое миниаппы (index.html + faq/)
+          path: bot/miniapp
 
       - name: Deploy to GitHub Pages
         id: deployment

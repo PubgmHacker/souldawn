@@ -67,6 +67,21 @@ export interface AuthUser {
   isAdmin: boolean;
 }
 
+/** Parse ADMIN_IDS env var (comma-separated TG IDs) into a Set of numbers. */
+export function parseAdminIds(): Set<number> {
+  const raw = process.env.ADMIN_IDS || "";
+  if (!raw.trim()) return new Set();
+  return new Set(
+    raw.split(",").map((s) => parseInt(s.trim(), 10)).filter((n) => !isNaN(n))
+  );
+}
+
+/** True if the given Telegram ID is listed in ADMIN_IDS. */
+export function isConfiguredAdmin(telegramId: number | undefined | null): boolean {
+  if (telegramId == null) return false;
+  return parseAdminIds().has(telegramId);
+}
+
 export async function getAuthUser(request: NextRequest): Promise<AuthUser | null> {
   const cookieToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value || "";
   const authHeader = request.headers.get("authorization") || "";
@@ -84,22 +99,36 @@ export async function getAuthUser(request: NextRequest): Promise<AuthUser | null
       select: { role: true, isAdmin: true, telegramId: true },
     });
     if (dbUser) {
+      const tgId = payload.telegram_id ?? (dbUser.telegramId != null ? Number(dbUser.telegramId) : undefined);
       const role = dbUser.role || "user";
+      const dbIsAdmin = role === "admin" || role === "owner" || !!dbUser.isAdmin;
+      // ADMIN_IDS env var is the source of truth — promote on the fly if listed there.
+      const envIsAdmin = isConfiguredAdmin(tgId);
+      const isAdmin = dbIsAdmin || envIsAdmin;
+      // Persist the promotion so future checks + listings reflect it.
+      if (envIsAdmin && role !== "owner" && role !== "admin") {
+        await db.user.update({
+          where: { id: payload.userId },
+          data: { role: "owner", isAdmin: true },
+        }).catch(() => {});
+      }
       return {
         userId: payload.userId,
-        telegramId: payload.telegram_id ?? (dbUser.telegramId != null ? Number(dbUser.telegramId) : undefined),
-        role,
-        isAdmin: role === "admin" || role === "owner" || !!dbUser.isAdmin,
+        telegramId: tgId,
+        role: isAdmin ? "owner" : role,
+        isAdmin,
       };
     }
   } catch {
     // DB unavailable — fall back to JWT claims
   }
 
+  // Fall back to JWT claims, but still honor ADMIN_IDS env var
+  const envIsAdmin = isConfiguredAdmin(payload.telegram_id);
   return {
     userId: payload.userId,
     telegramId: payload.telegram_id,
-    role: payload.role || "user",
-    isAdmin: isAdminRole(payload.role),
+    role: isAdminRole(payload.role) || envIsAdmin ? "owner" : payload.role || "user",
+    isAdmin: isAdminRole(payload.role) || envIsAdmin,
   };
 }

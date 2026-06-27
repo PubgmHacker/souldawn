@@ -151,21 +151,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           body: JSON.stringify(widgetData),
         });
         const data = await res.json();
-        if (data.success && data.user) {
-          setUser(data.user);
+        if (!res.ok || !data.success) {
+          console.error("[telegram-auth] server error:", res.status, data);
+          alert("Не удалось войти через Telegram: " + (data.error || `ошибка ${res.status}`));
+          return;
+        }
+        if (data.user) {
           if (data.token) setToken(data.token);
-          // Redirect admins to admin panel, others to dashboard
-          if (data.user.is_admin || data.user.role === "admin" || data.user.role === "owner") {
-            router.push("/admin");
-          } else {
-            router.push("/dashboard");
-          }
+          // Re-fetch session via /me to make sure cookies are set before navigation
+          const ok = await loadMe(data.token);
+          if (!ok) setUser(data.user);
+          const isAdminUser =
+            data.user.is_admin || data.user.role === "admin" || data.user.role === "owner";
+          router.push(isAdminUser ? "/admin" : "/dashboard");
         }
       } catch (e) {
         console.error("Auth failed:", e);
+        alert("Сетевая ошибка авторизации. Проверьте подключение и попробуйте снова.");
       }
     },
-    [router]
+    [router, loadMe]
   );
 
   const login = useCallback(

@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
 
     // Promote to owner if TG ID is in ADMIN_IDS
     await ensureAdminRole(user.id, data.id);
+    console.log("[telegram-auth] tg_id=%s, admin_ids=%s, after_ensure...", data.id, process.env.ADMIN_IDS || "(empty)");
 
     // Re-fetch user to get updated role
     const updatedUser = await db.user.findUnique({ where: { id: user.id } });

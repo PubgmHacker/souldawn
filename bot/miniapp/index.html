@@ -1453,7 +1453,12 @@ async function apiAuthMiniApp() {
   authReady = false;
   try {
     const initData = (tg && tg.initData) || "";
-    if (!initData) { authReady = true; return null; }
+    if (!initData) {
+      console.warn("[auth] no initData — building fallback from tg.initDataUnsafe");
+      currentUser = buildFallbackUser();
+      authReady = true;
+      return currentUser;
+    }
     const r = await fetch(SITE_URL + "/api/auth/mini-app", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1463,12 +1468,44 @@ async function apiAuthMiniApp() {
     if (r.ok && data.success) {
       authToken = data.token || null;
       currentUser = data.user || null;
+      console.log("[auth] server auth OK, role:", currentUser?.role);
+    } else {
+      console.error("[auth] server auth failed:", r.status, data);
+      currentUser = buildFallbackUser();
     }
   } catch (e) {
-    console.error("mini-app auth error:", e && e.message);
+    console.error("[auth] network error, using fallback:", e && e.message);
+    currentUser = buildFallbackUser();
   }
   authReady = true;
   return currentUser;
+}
+
+// Fallback: when API is unreachable, build user from Telegram.WebApp local data.
+// Role is resolved client-side from ADMIN_IDS passed via start_param or ?admin_ids=.
+function buildFallbackUser() {
+  if (!tg || !tg.initDataUnsafe || !tg.initDataUnsafe.user) return null;
+  const u = tg.initDataUnsafe.user;
+  const tgId = u.id;
+  const adminParam = new URLSearchParams(window.location.search).get("admin_ids") || "";
+  const adminIds = (function() {
+    const ids = [];
+    if (adminParam) adminParam.split(",").forEach(function(s){ var n=parseInt(s.trim(),10); if(n) ids.push(n); });
+    return new Set(ids);
+  })();
+  const role = adminIds.has(tgId) ? "owner" : "user";
+  return {
+    id: "local_" + tgId,
+    telegram_id: tgId,
+    username: u.username || "",
+    name: (u.first_name || "") + (u.last_name ? " " + u.last_name : ""),
+    photo_url: u.photo_url || "",
+    role: role,
+    is_admin: role === "owner",
+    notify_new_drops: true,
+    notify_promos: true,
+    _local: true
+  };
 }
 
 // Universal API call to the website with the Bearer token.
@@ -1722,9 +1759,16 @@ async function renderProfile() {
     el.innerHTML = `
       <div style="padding:48px 16px;text-align:center">
         <div style="font-size:40px;margin-bottom:12px">👤</div>
-        <div style="font-size:15px;font-weight:800;color:var(--cream)">Войди через Telegram</div>
-        <div style="font-size:13px;color:var(--muted);margin-top:8px">Открой это приложение из бота, чтобы увидеть профиль и заказы</div>
+        <div style="font-size:15px;font-weight:800;color:var(--cream)">Не удалось загрузить профиль</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:8px">Открой приложение заново из бота Telegram</div>
+        <button onclick="window.location.reload()" style="margin-top:16px;padding:10px 20px;background:var(--copper);color:var(--bg);border:none;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer">Обновить</button>
       </div>`;
+    return;
+  }
+
+  // If auth was local fallback (API unreachable), show what we have from TG SDK
+  if (currentUser._local) {
+    renderAuthProfile(currentUser);
     return;
   }
 

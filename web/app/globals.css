@@ -1,0 +1,202 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', sans-serif;
+}
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #070708;
+    color: #F2EEE9;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background-color: #C8102E;
+    color: #F2EEE9;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Bebas Neue', var(--font-display), 'Oswald', 'Inter', sans-serif;
+    letter-spacing: 0.02em;
+  }
+}
+
+@layer components {
+  .text-gradient {
+    background: linear-gradient(120deg, #F2EEE9 0%, #E5E5E5 45%, #C8102E 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .dawn-gradient {
+    background:
+      radial-gradient(120% 90% at 50% 100%, rgba(200,16,46,0.14) 0%, transparent 60%),
+      linear-gradient(180deg, #070708 0%, #0B0B0D 50%, #070708 100%);
+    background-size: 100% 200%;
+  }
+
+  /* —— Glassmorphism (Argus-style панели) —— */
+  .glass {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .glass-strong {
+    background: rgba(15,15,17,0.6);
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  /* —— 3D / глубина —— */
+  .perspective {
+    perspective: 1200px;
+  }
+
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+
+  /* Неон-сфера (3D glow orb) */
+  .orb {
+    border-radius: 9999px;
+    filter: blur(60px);
+    will-change: transform;
+  }
+
+  /* —— Гранулярный шум и виньетка —— */
+  .grain::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .vignette::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    pointer-events: none;
+    background: radial-gradient(120% 120% at 50% 50%, transparent 60%, rgba(0,0,0,0.55) 100%);
+  }
+
+  .hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(200, 16, 46, 0.18);
+  }
+
+  .border-accent-hover {
+    position: relative;
+  }
+
+  .border-accent-hover::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: #C8102E;
+    transition: width 0.3s ease;
+  }
+
+  .border-accent-hover:hover::after {
+    width: 100%;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-8 py-3 bg-accent text-bg font-bold text-sm tracking-widest uppercase transition-all duration-300;
+  }
+
+  .btn-primary:hover {
+    @apply bg-white text-bg;
+    transform: translateY(-1px);
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center px-8 py-3 border border-muted text-text font-bold text-sm tracking-widest uppercase transition-all duration-300;
+  }
+
+  .btn-outline:hover {
+    @apply border-accent text-accent;
+  }
+
+  .section-padding {
+    @apply px-6 md:px-12 lg:px-24 py-20 md:py-32;
+  }
+}
+
+/* Spline / 3D fallback loader */
+.loader {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.12);
+  border-top-color: #C8102E;
+  animation: sdSpin 0.8s linear infinite;
+}
+
+@keyframes sdSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #070708;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a2a30;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #C8102E;
+}
+
+/* ===== Support Chat Widget ===== */
+@keyframes sdChatIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes sdPulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50%      { transform: scale(1.25); opacity: 0; }
+}

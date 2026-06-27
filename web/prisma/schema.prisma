@@ -1,0 +1,194 @@
+// ═══════════════════════════════════════════════════════════════════
+// SOULDAWN — единая схема БД (PostgreSQL)
+// Единый источник истины для web/ (Prisma) и bot/ (asyncpg/SQLAlchemy).
+// Отражает существующие таблицы из bot/database (DDL + ORM) плюс
+// auth-колонки, которые ранее добавлялись на лету в web/lib/db.ts.
+// ═══════════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Пользователи ────────────────────────────────────────────────
+// telegram_id — ключ синхронизации между ботом и сайтом.
+// email/password_hash — для опциональной авторизации по email.
+// role — хранится в БД, назначается по ADMIN_IDS.
+model User {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // telegram_id — опционален: denormalized-поле для бота/мини-аппа.
+  // Способы входа живут в identities (telegram тоже).
+  telegramId     BigInt?   @unique @map("telegram_id")
+  username       String    @default("")
+  fullName       String    @default("") @map("full_name")
+  email          String?   @unique
+  passwordHash   String?   @map("password_hash")
+  role           String    @default("user")
+  isActive       Boolean   @default(true) @map("is_active")
+  isAdmin        Boolean   @default(false) @map("is_admin")
+  notifyNewDrops Boolean   @default(true) @map("notify_new_drops")
+  notifyPromos   Boolean   @default(true) @map("notify_promos")
+  notifyEmail    Boolean   @default(false) @map("notify_email")
+  emailVerified  Boolean   @default(false) @map("email_verified")
+  lastSeen       DateTime  @default(now()) @map("last_seen") @db.Timestamptz()
+  lastLogin      DateTime? @map("last_login")
+  siteSessions   Int       @default(0) @map("site_sessions")
+  profileData    Json?     @map("profile_data")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  orders     Order[]
+  identities Identity[]
+
+  @@map("users")
+}
+
+// ─── Способы входа (multi-provider) ─────────────────────────────
+// provider: "telegram" | "email" | "apple" | "vk"
+// providerUid: идентификатор у провайдера (telegram_id, email, apple sub, vk id).
+// passwordHash — только для provider=email.
+model Identity {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  provider     String
+  providerUid  String   @map("provider_uid")
+  passwordHash String?  @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUid])
+  @@index([userId])
+  @@map("identities")
+}
+
+// ─── Корзина ─────────────────────────────────────────────────────
+// user_id — одновременно PK и FK (Postgres это поддерживает, Prisma relation — нет).
+// Доступ к корзине выполняется по user_id напрямую.
+model Cart {
+  userId    String   @id @map("user_id") @db.Uuid
+  items     Json     @default("[]")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@map("carts")
+}
+
+// ─── Заказы ──────────────────────────────────────────────────────
+// total — в копейках (integer). items/contact — JSONB.
+model Order {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  items      Json
+  total      Int
+  status     String   @default("pending")
+  yookassaId String?  @map("yookassa_id")
+  contact    Json?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("orders")
+}
+
+// ─── Тикеты поддержки ───────────────────────────────────────────
+// user_id — telegram_id (BigInt), а не FK на users.id.
+// admin_messages — JSONB-массив {admin_id, message_id}.
+model SupportTicket {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        BigInt   @map("user_id")
+  adminMessages Json     @default("[]") @map("admin_messages")
+  originalText  String   @default("") @map("original_text")
+  status        String   @default("open")
+  acceptedBy    BigInt?  @map("accepted_by")
+  adminName     String   @default("") @map("admin_name")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@map("support_tickets")
+}
+
+// ─── Рассылки ────────────────────────────────────────────────────
+model Broadcast {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  text      String
+  target    String    @default("all")
+  sentAt    DateTime? @map("sent_at") @db.Timestamptz()
+  sentCount Int       @default(0) @map("sent_count")
+
+  @@map("broadcasts")
+}
+
+// ─── Расходы ─────────────────────────────────────────────────────
+// amount — в копейках.
+model Expense {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  category    String   @default("other")
+  description String   @default("")
+  amount      Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@map("expenses")
+}
+
+// Product — товары (источник истины для сайта и мини-аппа).
+// price_kopecks / old_price_kopecks — цена в копейках (целое).
+// images — первый = главный/перёд, второй = зад. badge — 'NEW'|'HIT'|'SALE'|null.
+// stock — доступный остаток (0 = нет в наличии).
+model Product {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug            String   @unique
+  name            String
+  description     String   @default("")
+  fullDescription String   @default("") @map("full_description")
+  priceKopecks    Int      @default(0) @map("price_kopecks")
+  oldPriceKopecks Int?     @map("old_price_kopecks")
+  category        String   @default("")
+  images          String[] @default([])
+  sizes           String[] @default([])
+  details         String[] @default([])
+  material        String   @default("")
+  care            String   @default("")
+  badge           String?
+  stock           Int      @default(0)
+  isActive        Boolean  @default(true) @map("is_active")
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@index([isActive, sortOrder])
+  @@map("products")
+}
+
+// PromoCode — промокоды (управляются через админку).
+// discountPercent — процент скидки (0..100). usageLimit=0 — без лимита.
+model PromoCode {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code            String    @unique
+  discountPercent Int       @default(0) @map("discount_percent")
+  isActive        Boolean   @default(true) @map("is_active")
+  usageLimit      Int       @default(0) @map("usage_limit")
+  usedCount       Int       @default(0) @map("used_count")
+  expiresAt       DateTime? @map("expires_at") @db.Timestamptz()
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@map("promo_codes")
+}
+
+// ContactLink — редактируемые ссылки/контакты (футер сайта + мини-апп).
+// key — стабильный идентификатор (instagram, telegram, support, ...).
+model ContactLink {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key       String   @unique
+  label     String
+  url       String   @default("")
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@index([isActive, sortOrder])
+  @@map("contact_links")
+}

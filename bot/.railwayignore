@@ -1,0 +1,13 @@
+node_modules/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+.env
+.env.*
+.souldawn-support-bot/
+souldawn-support-bot/
+test_*.gif
+.github/
+.venv/
+venv/

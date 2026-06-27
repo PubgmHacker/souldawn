@@ -1,0 +1,14 @@
+# SOULDAWN Bot — Nixpacks configuration
+# This forces Railway to use Python even if it detects Node.js files
+
+[phases.setup]
+nixPkgs = ["python312", "python312Packages.pip"]
+
+[phases.install]
+cmds = ["pip install -r requirements.txt"]
+
+[phases.build]
+cmds = ["echo 'Build complete'"]
+
+[start]
+cmd = "bash start.sh"

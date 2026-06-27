@@ -1,0 +1,52 @@
+{
+  "name": "souldawn",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "postinstall": "prisma generate",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.620.0",
+    "@prisma/client": "^6.2.0",
+    "@radix-ui/react-slot": "^1.1.0",
+    "@splinetool/react-spline": "^4.0.0",
+    "@splinetool/runtime": "^1.9.0",
+    "bcryptjs": "^2.4.3",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "embla-carousel-react": "^8.3.0",
+    "framer-motion": "^11.3.0",
+    "jose": "^5.9.0",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.451.0",
+    "next": "^14.2.0",
+    "pg": "^8.12.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "recharts": "^2.12.7",
+    "tailwind-merge": "^2.5.4",
+    "three": "^0.169.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^20.14.0",
+    "@types/pg": "^8.11.0",
+    "@types/react": "^18.3.0",
+    "@types/three": "^0.169.0",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.0",
+    "postcss": "^8.4.40",
+    "prisma": "^6.2.0",
+    "tailwindcss": "^3.4.7",
+    "typescript": "^5.5.0"
+  }
+}

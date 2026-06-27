@@ -29,6 +29,30 @@ router = Router()
 logger = logging.getLogger("SOULDAWN")
 
 
+async def _is_admin(uid: int) -> bool:
+    """Admin if listed in ADMIN_IDS env var OR flagged in app_users (web table)."""
+    if uid in ADMIN_IDS:
+        return True
+    # Fallback: check the web app_users table (shared PostgreSQL DB on Railway).
+    try:
+        from database.connection import async_session_factory
+        from sqlalchemy import text
+        if not async_session_factory:
+            return False
+        async with async_session_factory() as session:
+            result = await session.execute(
+                text("SELECT is_admin, role FROM app_users WHERE \"telegramId\" = :tid LIMIT 1"),
+                {"tid": uid},
+            )
+            row = result.first()
+            if row:
+                is_admin, role = row
+                return bool(is_admin) or role in ("admin", "owner")
+    except Exception as e:  # noqa: BLE001
+        logger.debug(f"_is_admin DB check failed for {uid}: {e}")
+    return False
+
+
 # ======================== /admin ========================
 ADMIN_PANEL_TITLE = (
     "\U0001F5A5  <b>SOULDAWN · Админ-панель</b>\n\n"
@@ -36,20 +60,16 @@ ADMIN_PANEL_TITLE = (
 )
 
 
-def _is_admin(uid: int) -> bool:
-    return uid in ADMIN_IDS
-
-
 @router.message(Command("admin"))
 async def cmd_admin(message: Message):
-    if not _is_admin(message.from_user.id):
+    if not await _is_admin(message.from_user.id):
         return  # тихо игнорируем — команда вообще не показывается обычным юзерам
     await message.answer(ADMIN_PANEL_TITLE, parse_mode="HTML", reply_markup=admin_panel_kb())
 
 
 @router.callback_query(F.data == "admin:home")
 async def on_admin_home(callback: CallbackQuery):
-    if not _is_admin(callback.from_user.id):
+    if not await _is_admin(callback.from_user.id):
         await callback.answer("No access", show_alert=True)
         return
     try:
@@ -77,7 +97,7 @@ def _fmt_rub(kopecks: int) -> str:
 
 @router.callback_query(F.data == "admin:stats")
 async def on_admin_stats(callback: CallbackQuery):
-    if not _is_admin(callback.from_user.id):
+    if not await _is_admin(callback.from_user.id):
         await callback.answer("No access", show_alert=True)
         return
     try:
@@ -97,7 +117,7 @@ async def on_admin_stats(callback: CallbackQuery):
 
 @router.callback_query(F.data == "admin:online")
 async def on_admin_online(callback: CallbackQuery):
-    if not _is_admin(callback.from_user.id):
+    if not await _is_admin(callback.from_user.id):
         await callback.answer("No access", show_alert=True)
         return
     try:
@@ -114,7 +134,7 @@ async def on_admin_online(callback: CallbackQuery):
 
 @router.callback_query(F.data == "admin:orders")
 async def on_admin_orders(callback: CallbackQuery):
-    if not _is_admin(callback.from_user.id):
+    if not await _is_admin(callback.from_user.id):
         await callback.answer("No access", show_alert=True)
         return
     try:
@@ -135,7 +155,7 @@ async def on_admin_orders(callback: CallbackQuery):
 
 @router.callback_query(F.data == "admin:tickets")
 async def on_admin_tickets(callback: CallbackQuery):
-    if not _is_admin(callback.from_user.id):
+    if not await _is_admin(callback.from_user.id):
         await callback.answer("No access", show_alert=True)
         return
     try:
@@ -155,7 +175,7 @@ async def on_admin_tickets(callback: CallbackQuery):
 
 @router.callback_query(F.data == "admin:expenses")
 async def on_admin_expenses(callback: CallbackQuery):
-    if not _is_admin(callback.from_user.id):
+    if not await _is_admin(callback.from_user.id):
         await callback.answer("No access", show_alert=True)
         return
     try:
@@ -178,7 +198,7 @@ async def on_admin_expenses(callback: CallbackQuery):
 
 @router.callback_query(F.data == "admin:broadcast")
 async def on_admin_broadcast(callback: CallbackQuery, state: FSMContext):
-    if not _is_admin(callback.from_user.id):
+    if not await _is_admin(callback.from_user.id):
         await callback.answer("No access", show_alert=True)
         return
     await state.set_state(BroadcastStates.waiting_for_content)
@@ -197,7 +217,7 @@ async def on_admin_broadcast(callback: CallbackQuery, state: FSMContext):
 # ======================== /notify ========================
 @router.message(Command("notify"))
 async def cmd_notify(message: Message, bot: Bot):
-    if message.from_user.id not in ADMIN_IDS:
+    if not await _is_admin(message.from_user.id):
         return
     text = message.text.replace("/notify", "", 1).strip()
     if not text:
@@ -228,7 +248,7 @@ async def cmd_notify(message: Message, bot: Bot):
 
 @router.message(Command("broadcast"))
 async def cmd_broadcast(message: Message, state: FSMContext):
-    if message.from_user.id not in ADMIN_IDS:
+    if not await _is_admin(message.from_user.id):
         return
     await state.set_state(BroadcastStates.waiting_for_content)
     await message.answer(
@@ -248,7 +268,7 @@ async def on_broadcast_cancel_cmd(message: Message, state: FSMContext):
 # ── Receive content + send to all active users ──
 @router.message(BroadcastStates.waiting_for_content)
 async def handle_broadcast_content(message: Message, state: FSMContext, bot: Bot):
-    if message.from_user.id not in ADMIN_IDS:
+    if not await _is_admin(message.from_user.id):
         return
 
     await state.clear()
@@ -311,7 +331,7 @@ async def handle_broadcast_content(message: Message, state: FSMContext, bot: Bot
 @router.callback_query(F.data.startswith("take_ticket:"))
 async def on_take_ticket(callback: CallbackQuery, bot: Bot):
     admin_id = callback.from_user.id
-    if admin_id not in ADMIN_IDS:
+    if not await _is_admin(admin_id):
         await callback.answer("No access", show_alert=True)
         return
 
@@ -380,7 +400,7 @@ async def on_take_ticket(callback: CallbackQuery, bot: Bot):
 async def handle_admin_reply(message: Message, bot: Bot):
     """Catch admin replies to tickets → forward to client anonymously."""
     admin_id = message.from_user.id
-    if admin_id not in ADMIN_IDS:
+    if not await _is_admin(admin_id):
         return
 
     reply_to = message.reply_to_message

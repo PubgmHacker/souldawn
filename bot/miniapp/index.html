@@ -1428,20 +1428,34 @@ const SITE_URL = (function() {
   } catch (e) {}
   return "http://localhost:3000";
 })();
-// Update the "Полная панель" link dynamically
-(function() {
+// Update the "Полная панель" link dynamically (with SSO token appended)
+function updateFullPanelLink() {
   const link = document.getElementById("fullPanelLink");
-  if (link) link.href = SITE_URL + "/admin";
-})();
+  if (!link) return;
+  let url = SITE_URL + "/admin";
+  if (authToken) {
+    url += "?token=" + encodeURIComponent(authToken);
+  }
+  link.href = url;
+}
 let isAdmin = false;
 let adminUser = null;
 let currentUser = null;      // user object from the website (role resolved server-side)
 let authToken = null;        // JWT (Bearer), kept in memory only
 let authReady = false;       // true once mini-app auth attempt finished
 
+// First paint of the full-panel link (token is null here; re-written after auth).
+updateFullPanelLink();
+
 // Open an external link (website) from inside Telegram.
+// Carries the in-memory Bearer token as ?token= so the website can exchange it
+// for httpOnly cookies (cross-origin SSO bridge). See /api/auth/from-token.
 function openSite(path) {
-  const url = SITE_URL + (path || "");
+  let url = SITE_URL + (path || "");
+  if (authToken) {
+    const sep = url.indexOf("?") >= 0 ? "&" : "?";
+    url += sep + "token=" + encodeURIComponent(authToken);
+  }
   if (tg && tg.openLink) tg.openLink(url);
   else window.open(url, "_blank");
 }
@@ -1469,6 +1483,8 @@ async function apiAuthMiniApp() {
       authToken = data.token || null;
       currentUser = data.user || null;
       console.log("[auth] server auth OK, role:", currentUser?.role);
+      // Re-write the full-panel link now that the SSO token is available.
+      updateFullPanelLink();
     } else {
       console.error("[auth] server auth failed:", r.status, data);
       currentUser = buildFallbackUser();

@@ -108,8 +108,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     (async () => {
+      // ── Cross-origin SSO bridge ──────────────────────────────────────
+      // When opened from the Telegram Mini App, the URL carries ?token=<jwt>.
+      // Exchange it for httpOnly cookies before anything else, then strip it.
+      let bridged = false;
+      if (typeof window !== "undefined") {
+        const u = new URL(window.location.href);
+        const t = u.searchParams.get("token");
+        if (t) {
+          try {
+            const r = await fetch("/api/auth/from-token", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ token: t }),
+            });
+            if (r.ok) bridged = true;
+          } catch (e) {
+            console.error("[sso-bridge] failed:", e);
+          }
+          u.searchParams.delete("token");
+          window.history.replaceState({}, "", u.pathname + u.search + u.hash);
+        }
+      }
+
       const hasSession = await loadMe();
-      if (!hasSession && typeof window !== "undefined") {
+      if (!hasSession && !bridged && typeof window !== "undefined") {
         try {
           const tg = (window as any)?.Telegram?.WebApp;
           if (tg?.initData) {

@@ -20,8 +20,8 @@ from database import (
     take_ticket as db_take_ticket,
     close_ticket, update_ticket_status, deactivate_user,
     get_full_stats, get_online_users, get_recent_orders, get_open_tickets, get_expenses,
+    save_broadcast, append_ticket_message,
 )
-import database.connection as _db_conn
 from keyboards import admin_panel_kb, admin_back_kb
 from states.support_states import BroadcastStates
 
@@ -205,12 +205,8 @@ async def cmd_notify(message: Message, bot: Bot):
         return
     user_ids = await get_all_users("drops")
     sent = 0
-    for user in user_ids:
-        # Если из БД пришел словарь, достаем из него telegram_id, иначе берем как число
-        uid = user.get("telegram_id", user.get("id", user)) if isinstance(user, dict) else user
+    for uid in user_ids:
         try:
-            # Защита от спам-фильтра Telegram (небольшая пауза)
-            await asyncio.sleep(0.05)
             await bot.send_message(uid, f"🔥 {text}")
             sent += 1
             await asyncio.sleep(0.3)
@@ -272,9 +268,7 @@ async def handle_broadcast_content(message: Message, state: FSMContext, bot: Bot
     sent_fail = 0
     deactivated = 0
 
-    for i, raw_user in enumerate(user_ids):
-        uid = raw_user.get("telegram_id", raw_user.get("id", raw_user)) if isinstance(raw_user, dict) else raw_user
-        await asyncio.sleep(0.05)
+    for i, uid in enumerate(user_ids):
         try:
             await message.copy_to(chat_id=uid)
             sent_ok += 1
@@ -300,11 +294,7 @@ async def handle_broadcast_content(message: Message, state: FSMContext, bot: Bot
             await asyncio.sleep(0.3)
 
     # Save broadcast record
-    if _db_conn.async_session_factory:
-        async with _db_conn.async_session_factory() as session:
-            bc = _db_conn.Broadcast(text=message.text or "[media]", target="all", sent_count=sent_ok)
-            session.add(bc)
-            await session.commit()
+    await save_broadcast(message.text or "[media]", target="all", sent_count=sent_ok)
 
     report = (
         f"📣 Рассылка завершена\n\n"
@@ -438,8 +428,11 @@ async def handle_admin_reply(message: Message, bot: Bot):
         await message.answer(f"❌ Не удалось отправить: {e}")
         return
 
-    # Mark ticket as answered + close
+    # Persist admin reply in ticket history
     admin_name = message.from_user.first_name or "Админ"
+    await append_ticket_message(ticket_id, "admin", reply_text)
+
+    # Mark ticket as answered + close
     await update_ticket_status(ticket_id, "answered", admin_name)
     await close_ticket(ticket_id)
 

@@ -285,17 +285,16 @@ async def get_or_create_user(telegram_id: int, username: str = "", name: str = "
         # session.begin() commits automatically on clean exit
 
     if is_new and _bot:
-        from config import SUPPORT_CHAT_IDS
-        uname_str = f"@{username}" if username else "no username"
-        for op_id in SUPPORT_CHAT_IDS:
-            try:
-                await _bot.send_message(
-                    op_id,
-                    f"New registration\n\nName: {name or '—'}\n"
-                    f"Username: {uname_str}\nTelegram ID: {telegram_id}\nSource: Telegram",
-                )
-            except Exception:
-                pass
+        from config import SUPPORT_CHAT_ID
+        try:
+            uname_str = f"@{username}" if username else "no username"
+            await _bot.send_message(
+                SUPPORT_CHAT_ID,
+                f"New registration\n\nName: {name or '—'}\n"
+                f"Username: {uname_str}\nTelegram ID: {telegram_id}\nSource: Telegram",
+            )
+        except Exception:
+            pass
     return user_dict
 
 
@@ -630,40 +629,6 @@ async def mark_order_processing(order_id: str) -> bool:
             return result.rowcount > 0
 
 
-# ======================== PRODUCTS (единый каталог с web) ========================
-
-async def get_products_by_ids(ids: list[str]) -> dict[str, dict]:
-    """Возвращает {id: {name, price_kopecks, stock, is_active}} для активных товаров.
-
-    Источник истины — общая таблица products (та же, что у web/Prisma).
-    Цены в копейках. Неизвестные/неактивные товары в результат не попадают.
-    """
-    if not async_session_factory or not ids:
-        return {}
-    # Уникальные непустые id.
-    clean_ids = [str(i) for i in dict.fromkeys(ids) if str(i).strip()]
-    if not clean_ids:
-        return {}
-    out: dict[str, dict] = {}
-    async with async_session_factory() as session:
-        async with session.begin():
-            result = await session.execute(
-                text(
-                    "SELECT id::text AS id, name, price_kopecks, stock, is_active "
-                    "FROM products WHERE id = ANY(:ids) AND is_active = TRUE"
-                ),
-                {"ids": clean_ids},
-            )
-            for row in result.mappings().all():
-                out[row["id"]] = {
-                    "name": row["name"],
-                    "price_kopecks": int(row["price_kopecks"] or 0),
-                    "stock": int(row["stock"] or 0),
-                    "is_active": bool(row["is_active"]),
-                }
-    return out
-
-
 # ======================== EXPENSES ========================
 
 async def add_expense(category: str, description: str, amount: int) -> dict:
@@ -924,3 +889,72 @@ async def update_ticket_status(ticket_id: str, status: str, admin_name: str = ""
                 text("UPDATE support_tickets SET status = :s, admin_name = :an WHERE id = :tid"),
                 {"s": status, "an": admin_name, "tid": ticket_id},
             )
+
+
+async def append_ticket_message(ticket_id: str, role: str, text_content: str) -> None:
+    """Append a message to the ticket's conversation history stored in JSONB.
+
+    role: 'user' | 'admin'
+    Adds {"role": role, "text": text_content, "ts": ISO-timestamp} to the
+    'admin_messages' JSONB array so the full conversation is persisted.
+    """
+    if not async_session_factory or not ticket_id:
+        return
+    entry = json.dumps({"role": role, "text": text_content[:2000],
+                        "ts": datetime.now(timezone.utc).isoformat()})
+    async with async_session_factory() as session:
+        async with session.begin():
+            await session.execute(
+                text(
+                    "UPDATE support_tickets "
+                    "SET admin_messages = admin_messages || :entry::jsonb "
+                    "WHERE id = :tid"
+                ),
+                {"entry": f"[{entry}]", "tid": ticket_id},
+            )
+
+
+async def get_open_ticket_by_user(user_id: int) -> dict | None:
+    """Return the most recent open/in_progress ticket for a given user."""
+    if not async_session_factory:
+        return None
+    async with async_session_factory() as session:
+        async with session.begin():
+            result = await session.execute(
+                text(
+                    "SELECT id, user_id, admin_messages, original_text, status, "
+                    "accepted_by, admin_name, created_at "
+                    "FROM support_tickets "
+                    "WHERE user_id = :uid AND status IN ('open', 'in_progress') "
+                    "ORDER BY created_at DESC LIMIT 1"
+                ),
+                {"uid": user_id},
+            )
+            row = result.mappings().first()
+            if not row:
+                return None
+            return {
+                "id": str(row["id"]),
+                "user_id": row["user_id"],
+                "admin_messages": row["admin_messages"] or [],
+                "original_text": row["original_text"] or "",
+                "status": row["status"],
+                "accepted_by": row["accepted_by"],
+                "admin_name": row["admin_name"] or "",
+                "created_at": row["created_at"].isoformat() if row["created_at"] else None,
+            }
+
+
+async def save_broadcast(text_content: str, target: str = "all", sent_count: int = 0) -> None:
+    """Persist a broadcast record. Replaces direct model access in admin.py."""
+    if not async_session_factory:
+        return
+    from database.models import Broadcast
+    async with async_session_factory() as session:
+        async with session.begin():
+            bc = Broadcast(
+                text=text_content[:4096],
+                target=target,
+                sent_count=sent_count,
+            )
+            session.add(bc)

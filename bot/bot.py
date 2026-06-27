@@ -87,8 +87,10 @@ async def main():
             logger.warning(f"Failed to set admin commands for {_admin_id}: {e}")
 
     logger.info("SOULDAWN Bot started!")
-    if OPENAI_API_KEY and OPENAI_BASE_URL:
+    if OPENAI_API_KEY:
         logger.info(f"AI: {OPENAI_MODEL} via {OPENAI_BASE_URL.split('/')[2]}")
+    else:
+        logger.warning("AI disabled")
     if YOOKASSA_SHOP_ID:
         logger.info(f"YooKassa: shop_id={YOOKASSA_SHOP_ID[:6]}...")
     else:

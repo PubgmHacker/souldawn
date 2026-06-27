@@ -6,8 +6,7 @@ import os
 
 # ======================== ENV VARS ========================
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
-raw_ids = os.getenv("SUPPORT_CHAT_ID", "520904288,1195137911,8340654471,8735560311")
-SUPPORT_CHAT_IDS = [int(i.strip()) for i in raw_ids.split(",") if i.strip()]
+SUPPORT_CHAT_ID = int(os.getenv("SUPPORT_CHAT_ID", "520904288"))
 
 # ======================== TELEGRAM LOGIN WIDGET ========================
 # Токен того же бота, что и BOT_TOKEN (Login Widget и Mini App используют одного бота).
@@ -16,7 +15,9 @@ TG_LOGIN_BOT_TOKEN = os.getenv("TG_LOGIN_BOT_TOKEN", BOT_TOKEN)
 # ВАЖНО: после Фазы 2 сессиями владеет Next.js (web/) — этот ключ нужен только боту,
 # пока какие-то его эндпоинты выпускают/проверяют JWT.
 JWT_SECRET_KEY = hashlib.sha256(TG_LOGIN_BOT_TOKEN.encode("utf-8")).digest() if TG_LOGIN_BOT_TOKEN else b""
-MINIAPP_URL = os.getenv("MINIAPP_URL", "https://souldawn-web-production.up.railway.app/")
+MINIAPP_URL = os.getenv("MINIAPP_URL", "")
+FAQ_MINIAPP_URL = os.getenv("FAQ_MINIAPP_URL", "")
+SUPPORT_BOT_URL = os.getenv("SUPPORT_BOT_URL", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "")

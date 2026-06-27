@@ -1271,10 +1271,7 @@ async function loadProducts() {
     const data = await r.json();
     const list = Array.isArray(data.products) ? data.products : [];
     PRODUCTS = list.map(p => ({
-      // ВАЖНО: id — реальный uuid из БД. По нему сервер пересчитывает
-      // сумму и списывает остаток. slug храним отдельно для URL.
-      id: p.id || p.slug,
-      slug: p.slug || null,
+      id: p.slug || p.id,
       name: p.name,
       category: p.category,
       price: Math.round((p.priceKopecks || 0) / 100),
@@ -1428,34 +1425,20 @@ const SITE_URL = (function() {
   } catch (e) {}
   return "http://localhost:3000";
 })();
-// Update the "Полная панель" link dynamically (with SSO token appended)
-function updateFullPanelLink() {
+// Update the "Полная панель" link dynamically
+(function() {
   const link = document.getElementById("fullPanelLink");
-  if (!link) return;
-  let url = SITE_URL + "/admin";
-  if (authToken) {
-    url += "?token=" + encodeURIComponent(authToken);
-  }
-  link.href = url;
-}
+  if (link) link.href = SITE_URL + "/admin";
+})();
 let isAdmin = false;
 let adminUser = null;
 let currentUser = null;      // user object from the website (role resolved server-side)
 let authToken = null;        // JWT (Bearer), kept in memory only
 let authReady = false;       // true once mini-app auth attempt finished
 
-// First paint of the full-panel link (token is null here; re-written after auth).
-updateFullPanelLink();
-
 // Open an external link (website) from inside Telegram.
-// Carries the in-memory Bearer token as ?token= so the website can exchange it
-// for httpOnly cookies (cross-origin SSO bridge). See /api/auth/from-token.
 function openSite(path) {
-  let url = SITE_URL + (path || "");
-  if (authToken) {
-    const sep = url.indexOf("?") >= 0 ? "&" : "?";
-    url += sep + "token=" + encodeURIComponent(authToken);
-  }
+  const url = SITE_URL + (path || "");
   if (tg && tg.openLink) tg.openLink(url);
   else window.open(url, "_blank");
 }
@@ -1468,60 +1451,29 @@ async function apiAuthMiniApp() {
   try {
     const initData = (tg && tg.initData) || "";
     if (!initData) {
-      console.warn("[auth] no initData — building fallback from tg.initDataUnsafe");
-      currentUser = buildFallbackUser();
+      console.warn("[auth] no initData — not inside Telegram WebApp?");
       authReady = true;
-      return currentUser;
+      return null;
     }
     const r = await fetch(SITE_URL + "/api/auth/mini-app", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ initData }),
     });
     const data = await r.json();
     if (r.ok && data.success) {
       authToken = data.token || null;
       currentUser = data.user || null;
-      console.log("[auth] server auth OK, role:", currentUser?.role);
-      // Re-write the full-panel link now that the SSO token is available.
-      updateFullPanelLink();
+      console.log("[auth] OK, role:", currentUser?.role, "id:", currentUser?.telegram_id);
     } else {
-      console.error("[auth] server auth failed:", r.status, data);
-      currentUser = buildFallbackUser();
+      console.error("[auth] failed:", r.status, data.error || data);
     }
   } catch (e) {
-    console.error("[auth] network error, using fallback:", e && e.message);
-    currentUser = buildFallbackUser();
+    console.error("[auth] network error:", e && e.message);
   }
   authReady = true;
   return currentUser;
-}
-
-// Fallback: when API is unreachable, build user from Telegram.WebApp local data.
-// Role is resolved client-side from ADMIN_IDS passed via start_param or ?admin_ids=.
-function buildFallbackUser() {
-  if (!tg || !tg.initDataUnsafe || !tg.initDataUnsafe.user) return null;
-  const u = tg.initDataUnsafe.user;
-  const tgId = u.id;
-  const adminParam = new URLSearchParams(window.location.search).get("admin_ids") || "";
-  const adminIds = (function() {
-    const ids = [];
-    if (adminParam) adminParam.split(",").forEach(function(s){ var n=parseInt(s.trim(),10); if(n) ids.push(n); });
-    return new Set(ids);
-  })();
-  const role = adminIds.has(tgId) ? "owner" : "user";
-  return {
-    id: "local_" + tgId,
-    telegram_id: tgId,
-    username: u.username || "",
-    name: (u.first_name || "") + (u.last_name ? " " + u.last_name : ""),
-    photo_url: u.photo_url || "",
-    role: role,
-    is_admin: role === "owner",
-    notify_new_drops: true,
-    notify_promos: true,
-    _local: true
-  };
 }
 
 // Universal API call to the website with the Bearer token.
@@ -1775,16 +1727,9 @@ async function renderProfile() {
     el.innerHTML = `
       <div style="padding:48px 16px;text-align:center">
         <div style="font-size:40px;margin-bottom:12px">👤</div>
-        <div style="font-size:15px;font-weight:800;color:var(--cream)">Не удалось загрузить профиль</div>
-        <div style="font-size:13px;color:var(--muted);margin-top:8px">Открой приложение заново из бота Telegram</div>
-        <button onclick="window.location.reload()" style="margin-top:16px;padding:10px 20px;background:var(--copper);color:var(--bg);border:none;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer">Обновить</button>
+        <div style="font-size:15px;font-weight:800;color:var(--cream)">Войди через Telegram</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:8px">Открой это приложение из бота, чтобы увидеть профиль и заказы</div>
       </div>`;
-    return;
-  }
-
-  // If auth was local fallback (API unreachable), show what we have from TG SDK
-  if (currentUser._local) {
-    renderAuthProfile(currentUser);
     return;
   }
 

@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>SOULDAWN · FAQ</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #0A0A0A;
+    --surface: #141414;
+    --card: #111111;
+    --dark: #1a1a1a;
+    --mid: #2a2a2a;
+    --copper: #C8102E;
+    --copper-light: #E63950;
+    --copper-dark: #8B0000;
+    --red: #C8102E;
+    --cream: #E8E4E0;
+    --text: #E8E4E0;
+    --muted: #8A8078;
+    --white: #F5F0EB;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== HEADER ===== */
+  .header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,10,10,0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(201,16,46,0.12);
+    padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header-logo {
+    font-size: 18px; font-weight: 900; letter-spacing: -0.5px;
+    color: var(--cream);
+  }
+  .header-logo span { color: var(--copper); }
+  .header-title {
+    font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--muted);
+  }
+
+  /* ===== HERO ===== */
+  .hero {
+    position: relative;
+    padding: 36px 16px 28px;
+    text-align: center;
+    background: linear-gradient(180deg, #0A0A0A 0%, #141414 50%, #2a0d0d 100%);
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    opacity: 0.03;
+  }
+  .hero-subtitle {
+    font-size: 10px; font-weight: 700; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--copper);
+    margin-bottom: 12px; position: relative;
+  }
+  .hero-title {
+    font-size: 40px; font-weight: 900; letter-spacing: -1.5px;
+    line-height: 1; position: relative;
+  }
+  .hero-title .soul { color: var(--cream); }
+  .hero-title .dawn {
+    background: linear-gradient(135deg, #E8E4E0 0%, #C8102E 50%, #8B0000 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-tagline {
+    font-size: 13px; color: var(--muted);
+    margin-top: 14px; line-height: 1.5;
+    position: relative; max-width: 300px; margin-left: auto; margin-right: auto;
+  }
+
+  /* ===== SEARCH ===== */
+  .search-wrap {
+    position: relative;
+    padding: 12px 16px 8px;
+  }
+  .search-input {
+    width: 100%; height: 44px;
+    background: var(--dark);
+    border: 1px solid var(--mid);
+    color: var(--cream);
+    font-family: inherit; font-size: 14px;
+    padding: 0 14px 0 40px;
+    transition: border-color 0.2s;
+  }
+  .search-input:focus { outline: none; border-color: var(--copper); }
+  .search-input::placeholder { color: var(--muted); }
+  .search-icon {
+    position: absolute; left: 28px; top: 50%; transform: translateY(-50%);
+    color: var(--muted); pointer-events: none;
+  }
+
+  /* ===== QUICK NAV ===== */
+  .nav-chips {
+    display: flex; gap: 8px; overflow-x: auto;
+    padding: 8px 16px 12px;
+    scrollbar-width: none; -ms-overflow-style: none;
+  }
+  .nav-chips::-webkit-scrollbar { display: none; }
+  .nav-chip {
+    flex-shrink: 0;
+    padding: 9px 14px;
+    background: var(--dark);
+    border: 1px solid var(--mid);
+    color: var(--muted);
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    letter-spacing: 0.5px; text-transform: uppercase;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .nav-chip:active { border-color: var(--copper); color: var(--copper); }
+
+  /* ===== ACCORDION SECTION ===== */
+  .faq-list { padding: 4px 16px 32px; }
+  .faq-item {
+    background: var(--card);
+    border: 1px solid rgba(201,16,46,0.08);
+    margin-bottom: 8px;
+    overflow: hidden;
+    scroll-margin-top: 70px;
+  }
+  .faq-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .faq-header:active { background: var(--dark); }
+  .faq-header-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+  .faq-icon {
+    width: 36px; height: 36px;
+    background: rgba(201,16,46,0.1);
+    border: 1px solid rgba(201,16,46,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .faq-title {
+    font-size: 14px; font-weight: 700;
+    letter-spacing: -0.2px;
+    color: var(--cream);
+  }
+  .faq-chevron {
+    width: 18px; height: 18px;
+    color: var(--muted);
+    transition: transform 0.25s;
+    flex-shrink: 0;
+  }
+  .faq-item.open .faq-chevron { transform: rotate(180deg); color: var(--copper); }
+  .faq-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .faq-item.open .faq-body { max-height: 1200px; }
+  .faq-content {
+    padding: 0 16px 18px;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--muted);
+  }
+  .faq-content h4 {
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--copper);
+    margin: 14px 0 8px;
+  }
+  .faq-content h4:first-child { margin-top: 0; }
+  .faq-content p { margin-bottom: 8px; }
+  .faq-content ul { list-style: none; padding: 0; }
+  .faq-content li {
+    padding: 4px 0 4px 16px;
+    position: relative;
+  }
+  .faq-content li::before {
+    content: '◆';
+    position: absolute; left: 0;
+    color: var(--copper);
+    font-size: 8px; top: 8px;
+  }
+  .faq-content a {
+    color: var(--cream);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(201,16,46,0.4);
+    word-break: break-all;
+  }
+  .faq-content a:active { color: var(--copper); }
+  .faq-content strong { color: var(--cream); font-weight: 700; }
+
+  /* Размеры — таблица */
+  .size-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    font-size: 13px;
+  }
+  .size-table th, .size-table td {
+    padding: 10px 8px;
+    text-align: center;
+    border-bottom: 1px solid rgba(201,16,46,0.1);
+  }
+  .size-table th {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase;
+    color: var(--copper);
+  }
+  .size-table td { color: var(--cream); }
+  .size-table td:first-child { color: var(--copper); font-weight: 700; }
+
+  /* CTA внутри секций */
+  .faq-cta {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 11px 18px;
+    background: var(--copper); color: var(--bg);
+    font-family: inherit; font-size: 12px; font-weight: 800;
+    letter-spacing: 1px; text-transform: uppercase;
+    border: none; cursor: pointer; text-decoration: none;
+    transition: background 0.2s;
+  }
+  .faq-cta:active { background: var(--copper-light); }
+
+  /* ===== SUPPORT CTA (нижняя плашка) ===== */
+  .support-cta {
+    margin: 4px 16px 24px;
+    padding: 20px 16px;
+    background: linear-gradient(135deg, var(--copper-dark), var(--copper));
+    text-align: center;
+  }
+  .support-cta-title {
+    font-size: 16px; font-weight: 900;
+    color: var(--bg);
+    margin-bottom: 4px;
+  }
+  .support-cta-text {
+    font-size: 12px;
+    color: rgba(10,10,10,0.8);
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+  .support-cta-btn {
+    display: inline-block;
+    padding: 12px 24px;
+    background: var(--bg); color: var(--cream);
+    font-family: inherit; font-size: 12px; font-weight: 800;
+    letter-spacing: 1px; text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  /* ===== FOOTER ===== */
+  .footer {
+    border-top: 1px solid rgba(201,16,46,0.08);
+    background: var(--surface);
+    padding: 24px 16px;
+    text-align: center;
+    padding-bottom: calc(24px + var(--safe-bottom));
+  }
+  .footer-logo {
+    font-size: 16px; font-weight: 900;
+    letter-spacing: -0.5px; margin-bottom: 8px;
+    color: var(--cream);
+  }
+  .footer-logo span { color: var(--copper); }
+  .footer-copy {
+    font-size: 10px; color: var(--muted);
+    letter-spacing: 1px;
+  }
+  .footer-motto {
+    font-size: 10px; color: var(--copper);
+    letter-spacing: 2px; text-transform: uppercase;
+    margin-top: 8px;
+  }
+
+  .no-results {
+    display: none;
+    padding: 40px 16px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .no-results.show { display: block; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo"><span>SOUL</span>DAWN</div>
+  <div class="header-title">Помощь</div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-subtitle">Часто задаваемые вопросы</div>
+  <div class="hero-title">
+    <span class="soul">SOUL</span><span class="dawn">DAWN</span>
+  </div>
+  <div class="hero-tagline">Все ответы о заказах, доставке, возврате и оплате — в одном месте</div>
+</div>
+
+<!-- SEARCH -->
+<div class="search-wrap">
+  <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  <input class="search-input" id="searchInput" type="text" placeholder="Поиск по вопросам..." oninput="onSearch()" />
+</div>
+
+<!-- QUICK NAV -->
+<div class="nav-chips" id="navChips"></div>
+
+<!-- FAQ LIST -->
+<div class="faq-list" id="faqList"></div>
+
+<div class="no-results" id="noResults">Ничего не найдено. Напиши в поддержку — поможем.</div>
+
+<!-- SUPPORT CTA -->
+<div class="support-cta">
+  <div class="support-cta-title">Не нашёл ответ?</div>
+  <div class="support-cta-text">Команда поддержки на связи каждый день с 10:00 до 19:00</div>
+  <a href="#" id="supportLink" class="support-cta-btn">💬 Написать в поддержку</a>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-logo">SOUL<span>DAWN</span></div>
+  <div class="footer-copy">© 2026 SOULDAWN. Все права защищены.</div>
+  <div class="footer-motto">БОРЬБА · АУТЕНТИЧНОСТЬ · РАССВЕТ</div>
+</div>
+
+<script>
+// ==================== TELEGRAM WEBAPP ====================
+let tg = null;
+try {
+  tg = window.Telegram.WebApp;
+  if (tg) { tg.expand(); tg.ready(); }
+} catch(e) {}
+
+// ==================== CONFIG (передаётся ботом через ?site= / start_param) ====================
+const SITE_URL = (function() {
+  try {
+    const qp = new URLSearchParams(window.location.search).get("site");
+    if (qp) return qp.replace(/\/+$/, "");
+    const sp = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || "";
+    const m = /(?:^|[?&])?site=([^&]+)/.exec(sp);
+    if (m) return decodeURIComponent(m[1]).replace(/\/+$/, "");
+    if (window.location.origin && window.location.origin.startsWith("http")) {
+      return window.location.origin.replace(/\/+$/, "");
+    }
+  } catch (e) {}
+  return "https://souldawn.com";
+})();
+
+// Ссылка на саппорт-бот (можно переопределить через ?support=)
+const SUPPORT_URL = (function() {
+  try {
+    const qp = new URLSearchParams(window.location.search).get("support");
+    if (qp) return qp;
+  } catch(e) {}
+  return "https://t.me/souldawn_support_bot";
+})();
+
+document.getElementById("supportLink").href = SUPPORT_URL;
+
+// ==================== FAQ DATA ====================
+// Информация синхронизирована с разделом «Помощь» на сайте souldawn.com
+const FAQ = [
+  {
+    id: "delivery",
+    icon: "📦",
+    title: "Доставка",
+    body: `
+      <h4>Способы доставки</h4>
+      <ul>
+        <li><strong>СДЭК</strong> — от 350 ₽, 2–5 дней</li>
+        <li><strong>Почта России</strong> — от 250 ₽, 5–10 дней</li>
+        <li><strong>Яндекс Доставка</strong> — от 300 ₽, 1–3 дня</li>
+        <li><strong>EMS</strong> — от 1500 ₽, 7–14 дней</li>
+      </ul>
+      <h4>Бесплатная доставка</h4>
+      <p>При заказе от <strong>5 000 ₽</strong> — доставка бесплатна по всей России.</p>
+      <h4>Куда доставляем</h4>
+      <p>Доставляем по всей России и в страны СНГ. Стоимость и сроки за рубеж уточняй у поддержки.</p>
+      <h4>Отслеживание</h4>
+      <p>После отправки трек-номер приходит в Telegram от оператора. Отследить посылку можно на сайте перевозчика.</p>
+    `
+  },
+  {
+    id: "returns",
+    icon: "🔄",
+    title: "Возврат и обмен",
+    body: `
+      <h4>14 дней на возврат</h4>
+      <p>Можно вернуть товар в течение <strong>14 дней</strong> с момента получения.</p>
+      <h4>Условия</h4>
+      <ul>
+        <li>Товар без признаков использования</li>
+        <li>Сохранены все бирки и упаковка</li>
+        <li>Чек или номер заказа</li>
+      </ul>
+      <h4>Как оформить возврат</h4>
+      <ul>
+        <li>Напиши номер заказа в поддержку</li>
+        <li>Согласуй возврат с оператором</li>
+        <li>Отправь товар удобным способом</li>
+        <li>Деньги вернутся за 3–5 дней</li>
+      </ul>
+      <p>Деньги возвращаются тем же способом, которым была оплачена покупка.</p>
+      <a href="#" onclick="openSupport();return false" class="faq-cta">Оформить возврат</a>
+    `
+  },
+  {
+    id: "sizes",
+    icon: "📏",
+    title: "Размеры",
+    body: `
+      <h4>Таблица размеров (крой оверсайз)</h4>
+      <table class="size-table">
+        <thead>
+          <tr><th>Размер</th><th>Грудь, см</th><th>Длина, см</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>S</td><td>106</td><td>70</td></tr>
+          <tr><td>M</td><td>112</td><td>72</td></tr>
+          <tr><td>L</td><td>118</td><td>74</td></tr>
+          <tr><td>XL</td><td>124</td><td>76</td></tr>
+        </tbody>
+      </table>
+      <h4>Как измерить</h4>
+      <p>Грудь — по самым выступающим точкам, обхват. Длина — от воротника до низа изделия.</p>
+      <h4>Если между размерами</h4>
+      <p>Бери больший — у нас оверсайз-крой, который и так идёт свободно. При сомнениях напиши оператору — поможем подобрать.</p>
+      <a href="#" onclick="openSupport();return false" class="faq-cta">Помочь с размером</a>
+    `
+  },
+  {
+    id: "payment",
+    icon: "💳",
+    title: "Оплата",
+    body: `
+      <h4>Способы оплаты</h4>
+      <ul>
+        <li><strong>Банковская карта</strong> — Visa / MasterCard / МИР</li>
+        <li><strong>СБП</strong> — Система быстрых платежей</li>
+        <li><strong>YooKassa</strong> — все способы в одном окне</li>
+      </ul>
+      <h4>Безопасность</h4>
+      <p>Все платежи защищены и проходят через сертифицированный платёжный шлюз YooKassa. Мы не видим и не храним данные твоей карты.</p>
+      <h4>Промокоды</h4>
+      <p>Промокод вводится в корзине перед оплатой. Скидка применяется к итоговой сумме.</p>
+      <h4>Чек</h4>
+      <p>Электронный чек приходит на почту после оплаты. Бумажный — по запросу.</p>
+    `
+  },
+  {
+    id: "quality",
+    icon: "✅",
+    title: "Качество и уход",
+    body: `
+      <h4>Материалы</h4>
+      <ul>
+        <li><strong>100% хлопок</strong> плотностью 220–400 г/м²</li>
+        <li><strong>Фурнитура YKK</strong> — молнии и кнопки премиум-класса</li>
+        <li><strong>Двойные строчки</strong> — прочность швов</li>
+      </ul>
+      <h4>Уход за вещью</h4>
+      <ul>
+        <li>Стирка при 30°C, деликатный режим</li>
+        <li>Не отбеливать</li>
+        <li>Сушить в расправленном виде, вдали от батарей</li>
+        <li>Гладить с изнанки при средней температуре</li>
+      </ul>
+      <h4>Гарантия</h4>
+      <p>Каждая вещь проходит контроль качества перед отправкой. Если обнаружил брак — напиши в течение 14 дней, заменим бесплатно.</p>
+    `
+  },
+  {
+    id: "order",
+    icon: "🛒",
+    title: "Заказ и оформление",
+    body: `
+      <h4>Как сделать заказ</h4>
+      <ul>
+        <li>Открой каталог в боте</li>
+        <li>Добавь товары в корзину</li>
+        <li>Укажи контактные данные и адрес доставки</li>
+        <li>Оплати удобным способом</li>
+      </ul>
+      <h4>Изменение заказа</h4>
+      <p>Чтобы изменить или отменить заказ после оплаты — напиши оператору как можно скорее, пока заказ не отправлен.</p>
+      <h4>Срок сборки</h4>
+      <p>Заказ собираем 1–2 рабочих дня. После отправки приходит трек-номер.</p>
+      <a href="#" onclick="openCatalog();return false" class="faq-cta">Открыть каталог</a>
+    `
+  },
+  {
+    id: "contacts",
+    icon: "📞",
+    title: "Контакты",
+    body: `
+      <h4>Поддержка</h4>
+      <ul>
+        <li><strong>Telegram:</strong> @souldawn_support</li>
+        <li><strong>Почта:</strong> hello@souldawn.com</li>
+      </ul>
+      <h4>Режим работы</h4>
+      <p>Пн–Пт, 10:00–19:00 (МСК). Сообщения, отправленные вне рабочих часов, обрабатываем на следующий день.</p>
+      <h4>Реквизиты</h4>
+      <p>Юридическую информацию и реквизиты для организаций можно запросить у поддержки.</p>
+      <a href="#" onclick="openSupport();return false" class="faq-cta">Связаться с нами</a>
+    `
+  },
+  {
+    id: "links",
+    icon: "🔗",
+    title: "Ссылки и соцсети",
+    body: `
+      <h4>Наш сайт</h4>
+      <p><a href="#" onclick="openSite();return false">souldawn.com</a> — полный каталог, профиль и история заказов.</p>
+      <h4>Соцсети</h4>
+      <ul>
+        <li><strong>Instagram:</strong> @souldawn</li>
+        <li><strong>TikTok:</strong> @souldawn</li>
+        <li><strong>Telegram-канал:</strong> @souldawn</li>
+      </ul>
+      <h4>Поддержка</h4>
+      <p><strong>Telegram:</strong> @souldawn_support</p>
+      <a href="#" onclick="openSite();return false" class="faq-cta">Открыть сайт</a>
+    `
+  },
+  {
+    id: "about",
+    icon: "🌅",
+    title: "О бренде",
+    body: `
+      <h4>SOULDAWN — уличная культура и спорт</h4>
+      <p>Твоя одежда — это отражение твоей внутренней борьбы. Рождён на улицах, закалён в битвах.</p>
+      <h4>Три принципа</h4>
+      <ul>
+        <li><strong>Борьба</strong> — каждая вещь результат внутренней битвы</li>
+        <li><strong>Аутентичность</strong> — рождено на улицах, без компромиссов</li>
+        <li><strong>Рассвет</strong> — после каждой борьбы новый день</li>
+      </ul>
+      <h4>Философия</h4>
+      <p>Каждый путь начинается в темноте. Сталь закаляется огнём. После самой долгой ночи всегда восходит солнце — SOULDAWN для тех, кто дошёл до утра.</p>
+      <a href="#" onclick="openSite();return false" class="faq-cta">Узнать больше</a>
+    `
+  },
+];
+
+// ==================== RENDER ====================
+const faqList = document.getElementById("faqList");
+const navChips = document.getElementById("navChips");
+
+function renderNav() {
+  navChips.innerHTML = FAQ.map(f =>
+    `<div class="nav-chip" onclick="scrollTo('${f.id}')">${f.icon} ${f.title}</div>`
+  ).join("");
+}
+
+function renderList() {
+  faqList.innerHTML = FAQ.map(f => `
+    <div class="faq-item" id="item-${f.id}">
+      <div class="faq-header" onclick="toggle('${f.id}')">
+        <div class="faq-header-left">
+          <div class="faq-icon">${f.icon}</div>
+          <div class="faq-title">${f.title}</div>
+        </div>
+        <svg class="faq-chevron" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="faq-body">
+        <div class="faq-content">${f.body}</div>
+      </div>
+    </div>
+  `).join("");
+}
+
+function toggle(id) {
+  const item = document.getElementById("item-" + id);
+  if (item) item.classList.toggle("open");
+}
+
+function scrollTo(id) {
+  const item = document.getElementById("item-" + id);
+  if (!item) return;
+  if (!item.classList.contains("open")) item.classList.add("open");
+  item.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// ==================== SEARCH ====================
+let searchQuery = "";
+function onSearch() {
+  searchQuery = (document.getElementById("searchInput").value || "").toLowerCase().trim();
+  const items = document.querySelectorAll(".faq-item");
+  let visible = 0;
+  items.forEach(el => {
+    const text = el.textContent.toLowerCase();
+    const match = !searchQuery || text.includes(searchQuery);
+    el.style.display = match ? "" : "none";
+    if (match) visible++;
+  });
+  document.getElementById("noResults").classList.toggle("show", visible === 0);
+}
+
+// ==================== EXTERNAL LINKS ====================
+function openSite() {
+  if (tg && tg.openLink) tg.openLink(SITE_URL);
+  else window.open(SITE_URL, "_blank");
+}
+
+function openSupport() {
+  if (tg && tg.openTelegramLink) tg.openTelegramLink(SUPPORT_URL);
+  else if (tg && tg.openLink) tg.openLink(SUPPORT_URL);
+  else window.open(SUPPORT_URL, "_blank");
+}
+
+function openCatalog() {
+  // Закрываем FAQ и возвращаем в бота — каталог открывается кнопкой в боте
+  if (tg && tg.close) tg.close();
+}
+
+// ==================== INIT ====================
+renderNav();
+renderList();
+
+// Глубокая ссылка: #sizes автоматически открывает раздел размеров
+(function() {
+  const hash = window.location.hash.replace("#", "");
+  if (hash) {
+    const item = document.getElementById("item-" + hash);
+    if (item) {
+      item.classList.add("open");
+      setTimeout(() => item.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
+    }
+  }
+})();
+</script>
+</body>
+</html>

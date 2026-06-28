@@ -49,6 +49,31 @@ export default function NotificationBell() {
     setUnread((prev) => Math.max(0, prev - 1));
   };
 
+  const deleteNotif = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    await fetch("/api/notifications", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    setNotifs((prev) => {
+      const updated = prev.filter((n) => n.id !== id);
+      const wasRead = prev.find((n) => n.id === id)?.isRead;
+      if (!wasRead) setUnread((u) => Math.max(0, u - 1));
+      return updated;
+    });
+  };
+
+  const clearAll = async () => {
+    await fetch("/api/notifications", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clearAll: true }),
+    });
+    setNotifs([]);
+    setUnread(0);
+  };
+
   if (!user) return null;
 
   return (
@@ -71,10 +96,18 @@ export default function NotificationBell() {
 
       {open && (
         <div className="absolute right-0 top-full mt-2 w-80 max-h-96 bg-[#101014] border border-[rgba(200,200,210,0.12)] overflow-hidden z-50 shadow-xl">
-          <div className="px-4 py-3 border-b border-[rgba(200,200,210,0.08)]">
+          <div className="px-4 py-3 border-b border-[rgba(200,200,210,0.08)] flex items-center justify-between">
             <p className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#6B6B78]">
               Уведомления
             </p>
+            {notifs.length > 0 && (
+              <button
+                onClick={clearAll}
+                className="text-[9px] font-bold tracking-wider uppercase text-[#6B6B78]/50 hover:text-red-400/70 transition-colors"
+              >
+                Очистить все
+              </button>
+            )}
           </div>
           <div className="max-h-72 overflow-y-auto">
             {notifs.length === 0 ? (
@@ -86,11 +119,20 @@ export default function NotificationBell() {
                 <button
                   key={n.id}
                   onClick={() => markRead(n.id)}
-                  className={`w-full text-left px-4 py-3 border-b border-[rgba(200,200,210,0.05)] hover:bg-[rgba(200,200,210,0.03)] transition-colors ${
+                  className={`w-full text-left px-4 py-3 border-b border-[rgba(200,200,210,0.05)] hover:bg-[rgba(200,200,210,0.03)] transition-colors relative ${
                     !n.isRead ? "bg-[rgba(200,200,210,0.04)]" : ""
                   }`}
                 >
-                  <p className="text-xs font-bold text-[#E8E8F0]">{n.title}</p>
+                  <button
+                    onClick={(e) => deleteNotif(e, n.id)}
+                    className="absolute top-3 right-3 text-[#6B6B78]/30 hover:text-red-400/70 transition-colors p-0.5"
+                    aria-label="Удалить"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                  <p className="text-xs font-bold text-[#E8E8F0] pr-6">{n.title}</p>
                   <p className="text-[11px] text-[#6B6B78] mt-0.5 line-clamp-2">{n.body}</p>
                   <p className="text-[9px] text-[#6B6B78]/40 mt-1">
                     {new Date(n.createdAt).toLocaleDateString("ru-RU")}

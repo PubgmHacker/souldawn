@@ -19,6 +19,7 @@ export interface User {
   photo_url?: string;
   role?: string;
   is_admin: boolean;
+  is_active?: boolean;
   notify_new_drops: boolean;
   notify_promos: boolean;
   notify_email?: boolean;
@@ -31,16 +32,27 @@ export interface User {
 
 export interface Order {
   id: string;
+  cipher: string;
   items: { name: string; size?: string; qty: number; price: number }[];
   total: number;
+  subtotal: number;
+  deliveryCost: number;
+  discountAmount: number;
+  promoCode: string | null;
   status: string;
   created_at: string | null;
-  tracking?: string;
+  tracking: string | null;
+  itemNames: string;
+  itemsCount: number;
+  deliveryType: string;
+  deliveryCity: string;
+  pvzAddress: string;
+  deliveryAddress: string;
 }
 
-/** Format price: kopecks → ₽. */
-export function formatPrice(kopecks: number): string {
-  return (kopecks / 100).toLocaleString("ru-RU", { maximumFractionDigits: 0 });
+/** Format price: rubles → ₽. */
+export function formatPrice(rubles: number): string {
+  return rubles.toLocaleString("ru-RU", { maximumFractionDigits: 0 });
 }
 
 interface AuthContextType {

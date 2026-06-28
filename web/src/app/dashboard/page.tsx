@@ -16,6 +16,22 @@ const STATUS_MAP: Record<string, string> = {
   cancelled: "Отменён",
 };
 
+const STATUS_COLORS: Record<string, string> = {
+  pending: "text-amber-400/80 bg-amber-400/10",
+  paid: "text-emerald-400/80 bg-emerald-400/10",
+  processing: "text-[#C8C8D0]/80 bg-[rgba(200,200,210,0.1)]",
+  shipped: "text-blue-400/80 bg-blue-400/10",
+  delivered: "text-[#C8C8D0]/80 bg-[rgba(200,200,210,0.1)]",
+  cancelled: "text-red-400/80 bg-red-400/10",
+};
+
+function deliveryLabel(type: string, city: string, pvz: string, address: string): string {
+  if (type === "cdek-pvz") return pvz ? `ПВЗ СДЭК · ${city}${pvz ? ", " + pvz : ""}` : "ПВЗ СДЭК";
+  if (type === "cdek-courier") return address ? `Курьер СДЭК · ${city}` : "Курьер СДЭК";
+  if (type === "post") return address ? `Почта России · ${city}` : "Почта России";
+  return type || "—";
+}
+
 export default function DashboardPage() {
   const {
     user,
@@ -23,13 +39,11 @@ export default function DashboardPage() {
     orders,
     logout,
     updateProfile,
-    notify_new_drops: notifyDrops,
-    notify_promos: notifyPromos,
   } = useAuth();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const [drops, setDrops] = useState(notifyDrops);
-  const [promos, setPromos] = useState(notifyPromos);
+  const [drops, setDrops] = useState(user?.notify_new_drops ?? false);
+  const [promos, setPromos] = useState(user?.notify_promos ?? false);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -95,6 +109,8 @@ export default function DashboardPage() {
       </div>
     );
   }
+
+  const isActive = user.is_active !== false;
 
   return (
     <div className="pt-24 pb-20 px-6 md:px-12 lg:px-24">
@@ -201,8 +217,10 @@ export default function DashboardPage() {
                 <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#6B6B78]/50 block mb-1">
                   Статус
                 </span>
-                <p className="text-sm text-green-400/80 font-bold tracking-wider uppercase">
-                  Активен
+                <p className={`text-sm font-bold tracking-wider uppercase ${
+                  isActive ? "text-green-400/80" : "text-red-400/80"
+                }`}>
+                  {isActive ? "Активен" : "Заблокирован"}
                 </p>
               </div>
             </div>
@@ -229,54 +247,114 @@ export default function DashboardPage() {
                 </Link>
               </div>
             ) : (
-              <div className="border border-[rgba(200,200,210,0.08)] overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-[rgba(200,200,210,0.08)]">
-                        <th className="text-left px-4 py-3 text-[10px] font-bold tracking-widest uppercase text-[#6B6B78]/60">
-                          Заказ
-                        </th>
-                        <th className="text-left px-4 py-3 text-[10px] font-bold tracking-widest uppercase text-[#6B6B78]/60">
-                          Дата
-                        </th>
-                        <th className="text-left px-4 py-3 text-[10px] font-bold tracking-widest uppercase text-[#6B6B78]/60">
-                          Сумма
-                        </th>
-                        <th className="text-left px-4 py-3 text-[10px] font-bold tracking-widest uppercase text-[#6B6B78]/60">
-                          Статус
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {orders.map((order: Order) => (
-                        <tr
-                          key={order.id}
-                          className="border-b border-[rgba(200,200,210,0.05)] last:border-0 hover:bg-[rgba(200,200,210,0.02)] transition-colors"
-                        >
-                          <td className="px-4 py-3 text-[#E8E8F0] font-bold tracking-wider">
-                            #{order.id.slice(0, 8)}
-                          </td>
-                          <td className="px-4 py-3 text-[#6B6B78]">
-                            {order.created_at
-                              ? new Date(order.created_at).toLocaleDateString(
-                                  "ru-RU",
-                                )
-                              : "—"}
-                          </td>
-                          <td className="px-4 py-3 text-[#C8C8D0] font-bold">
-                            {formatPrice(order.total)} ₽
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-xs font-bold tracking-wider uppercase text-[#6B6B78]">
-                              {STATUS_MAP[order.status] || order.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+              <div className="space-y-3">
+                {orders.map((order: Order) => {
+                  const statusKey = STATUS_MAP[order.status] ? order.status : "pending";
+                  return (
+                    <details key={order.id} className="border border-[rgba(200,200,210,0.08)] bg-[#101014]/50 group">
+                      <summary className="px-5 py-4 cursor-pointer hover:bg-[rgba(200,200,210,0.02)] transition-colors flex items-center gap-4 text-xs">
+                        {/* Cipher */}
+                        <span className="font-black text-[#C8C8D0] font-[family-name:var(--font-oswald)] tracking-wider text-sm shrink-0">
+                          {order.cipher || `#${order.id.slice(0, 8)}`}
+                        </span>
+
+                        {/* Status badge */}
+                        <span className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                          STATUS_COLORS[statusKey] || "text-[#6B6B78]"
+                        }`}>
+                          {STATUS_MAP[statusKey] || order.status}
+                        </span>
+
+                        {/* Date */}
+                        <span className="text-[#6B6B78]/50 hidden sm:inline">
+                          {order.created_at
+                            ? new Date(order.created_at).toLocaleDateString("ru-RU")
+                            : "—"}
+                        </span>
+
+                        {/* Item names preview */}
+                        <span className="text-[#E8E8F0]/60 flex-1 truncate hidden md:inline">
+                          {order.itemNames || `${order.itemsCount || order.items.length} шт`}
+                        </span>
+
+                        {/* Total */}
+                        <span className="text-[#E8E8F0] font-bold shrink-0">
+                          {formatPrice(order.total)} ₽
+                        </span>
+                      </summary>
+
+                      <div className="px-5 pb-4 border-t border-[rgba(200,200,210,0.05)] pt-4">
+                        {/* Order details grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs mb-4">
+                          <div>
+                            <span className="text-[#6B6B78]/50 block mb-0.5">Доставка</span>
+                            <p className="text-[#E8E8F0]">
+                              {deliveryLabel(
+                                order.deliveryType,
+                                order.deliveryCity,
+                                order.pvzAddress,
+                                order.deliveryAddress
+                              )}
+                            </p>
+                          </div>
+                          {order.tracking && (
+                            <div>
+                              <span className="text-[#6B6B78]/50 block mb-0.5">Трек-код</span>
+                              <p className="text-[#C8C8D0] font-bold font-mono tracking-wider">{order.tracking}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Price breakdown */}
+                        <div className="text-xs text-[#6B6B78]/50 mb-4">
+                          <span>Товаров: {order.itemsCount || order.items.length}</span>
+                          <span className="mx-2">·</span>
+                          <span>Подитог: {formatPrice(order.subtotal || order.total)} ₽</span>
+                          {order.deliveryCost > 0 && (
+                            <>
+                              <span className="mx-2">·</span>
+                              <span>Доставка: {formatPrice(order.deliveryCost)} ₽</span>
+                            </>
+                          )}
+                          {order.discountAmount > 0 && (
+                            <>
+                              <span className="mx-2">·</span>
+                              <span className="text-emerald-400/70">Скидка: −{formatPrice(order.discountAmount)} ₽</span>
+                            </>
+                          )}
+                          {order.promoCode && (
+                            <>
+                              <span className="mx-2">·</span>
+                              <span>Промо: {order.promoCode}</span>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Items list */}
+                        <div className="border-t border-[rgba(200,200,210,0.06)] pt-3">
+                          <p className="text-[9px] font-bold tracking-[0.15em] uppercase text-[#6B6B78]/40 mb-2">
+                            Состав заказа
+                          </p>
+                          <div className="space-y-1.5">
+                            {order.items.map((item, idx) => (
+                              <div key={idx} className="flex items-center justify-between text-xs">
+                                <div className="min-w-0">
+                                  <p className="text-[#E8E8F0]/80">{item.name}</p>
+                                  {item.size && (
+                                    <span className="text-[#6B6B78]/40 ml-1">({item.size})</span>
+                                  )}
+                                </div>
+                                <span className="text-[#6B6B78]/60 shrink-0 ml-2">
+                                  {formatPrice(item.price)} ₽ × {item.qty || 1}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </details>
+                  );
+                })}
               </div>
             )}
           </div>

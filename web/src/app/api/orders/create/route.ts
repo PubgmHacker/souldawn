@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { generateOrderCipher } from "@/lib/orderCipher";
+import { getAuthUser } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
@@ -66,10 +67,14 @@ export async function POST(req: Request) {
     const itemsJson = JSON.stringify(items);
     const itemNames = items.map((i: { name: string; size: string }) => `${i.name} (${i.size})`).join(", ");
 
+    // Check if user is authenticated (cookie-based)
+    const auth = await getAuthUser(req as any).catch(() => null);
+
     // Save order to database
     const order = await db.order.create({
       data: {
         cipher,
+        userId: auth?.userId || undefined,
         userEmail: email,
         userTelegram: telegram,
         userName: name || "",

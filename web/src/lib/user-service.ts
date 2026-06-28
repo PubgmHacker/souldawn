@@ -9,6 +9,7 @@ export interface PublicUser {
   email: string | null;
   role: string;
   is_admin: boolean;
+  is_active: boolean;
   notify_new_drops: boolean;
   notify_promos: boolean;
   email_verified: boolean;
@@ -31,6 +32,7 @@ function toPublicUser(u: any): PublicUser {
     email: u.email || null,
     role: u.role || "user",
     is_admin: u.role === "admin" || u.role === "owner" || !!u.isAdmin,
+    is_active: u.isActive !== false,
     notify_new_drops: !!u.notifyNewDrops,
     notify_promos: !!u.notifyPromos,
     email_verified: false,
@@ -145,19 +147,35 @@ export async function getUserById(id: string): Promise<PublicUser | null> {
   return user ? toPublicUser(user) : null;
 }
 
-export async function getOrdersForUser(userId: string) {
+export async function getOrdersForUser(userId: string, userEmail?: string | null) {
   const orders = await db.order.findMany({
-    where: { userId },
+    where: {
+      OR: [
+        { userId },
+        ...(userEmail ? [{ userEmail, userId: null as unknown as string }] : []),
+      ],
+    },
     orderBy: { createdAt: "desc" },
     take: 50,
   });
   return orders.map((o) => ({
     id: o.id,
+    cipher: o.cipher,
     items: JSON.parse(o.items || "[]"),
     total: o.total,
+    subtotal: o.subtotal,
+    deliveryCost: o.deliveryCost,
+    discountAmount: o.discountAmount,
+    promoCode: o.promoCode || null,
     status: o.status,
     created_at: o.createdAt ? new Date(o.createdAt).toISOString() : null,
-    tracking: null,
+    tracking: o.trackingCode || null,
+    itemNames: o.itemNames || "",
+    itemsCount: o.itemsCount || 0,
+    deliveryType: o.deliveryType || "",
+    deliveryCity: o.deliveryCity || "",
+    pvzAddress: o.pvzAddress || "",
+    deliveryAddress: o.deliveryAddress || "",
   }));
 }
 

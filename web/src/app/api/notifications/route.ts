@@ -50,3 +50,22 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ success: true });
 }
+
+// DELETE /api/notifications — delete one or clear all
+export async function DELETE(request: NextRequest) {
+  const auth = await getAuthUser(request);
+  if (!auth) return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
+
+  const body = await request.json();
+
+  if (body.clearAll) {
+    await db.notification.deleteMany({ where: { userId: auth.userId } });
+    return NextResponse.json({ success: true });
+  }
+
+  const { id } = body;
+  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+
+  await db.notification.delete({ where: { id, userId: auth.userId } });
+  return NextResponse.json({ success: true });
+}

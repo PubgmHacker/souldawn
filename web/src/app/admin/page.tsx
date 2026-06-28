@@ -49,7 +49,52 @@ interface BroadcastRow {
   createdAt: string;
 }
 
-type Tab = "orders" | "users" | "sessions" | "tg-broadcast" | "in-app";
+type Tab = "orders" | "users" | "sessions" | "tg-broadcast" | "in-app" | "products" | "notifications";
+
+interface NotifRow {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  title: string;
+  body: string;
+  type: string;
+  isRead: boolean;
+  createdBy: string | null;
+  createdAt: string;
+}
+
+interface NotifStats {
+  total: number;
+  unread: number;
+  byType: Record<string, number>;
+}
+
+interface ProductRow {
+  id: string;
+  slug: string;
+  name: string;
+  price: number;
+  oldPrice: number | null;
+  category: string;
+  gender: string;
+  collection: string;
+  description: string;
+  fullDescription: string;
+  details: string;
+  material: string;
+  care: string;
+  sizes: string;
+  images: string;
+  stock: number;
+  badge: string;
+  gradient: string;
+  pattern: string;
+  icon: string;
+  tag: string;
+  active: boolean;
+  createdAt: string;
+}
 
 interface OrderRow {
   id: string;
@@ -129,6 +174,20 @@ export default function AdminPage() {
   // Broadcasts history
   const [broadcasts, setBroadcasts] = useState<BroadcastRow[]>([]);
 
+  // Products
+  const [products, setProducts] = useState<ProductRow[]>([]);
+  const [editingProduct, setEditingProduct] = useState<ProductRow | null>(null);
+  const [productForm, setProductForm] = useState<Record<string, string | number | null>>({});
+  const [productSaving, setProductSaving] = useState(false);
+  const [productError, setProductError] = useState("");
+
+  // Notifications
+  const [notifs, setNotifs] = useState<NotifRow[]>([]);
+  const [notifStats, setNotifStats] = useState<NotifStats>({ total: 0, unread: 0, byType: {} });
+  const [editingNotif, setEditingNotif] = useState<NotifRow | null>(null);
+  const [notifFilter, setNotifFilter] = useState<string>("");
+  const [notifSaving, setNotifSaving] = useState(false);
+
   // If authenticated and is admin, stay on page. If authenticated but not admin, go to dashboard.
   useEffect(() => {
     if (!loading && user && !isAdmin) {
@@ -179,6 +238,26 @@ export default function AdminPage() {
         fetch("/api/admin/broadcast")
           .then((r) => r.json())
           .then((d) => setBroadcasts(d.broadcasts || []))
+          .catch(() => {})
+      );
+    }
+    if (tab === "products") {
+      promises.push(
+        fetch("/api/admin/products", { signal })
+          .then((r) => r.json())
+          .then((d) => setProducts(d.products || []))
+          .catch(() => {})
+      );
+    }
+    if (tab === "notifications") {
+      const q = notifFilter ? `?type=${encodeURIComponent(notifFilter)}` : "";
+      promises.push(
+        fetch(`/api/admin/notifications${q}`, { signal })
+          .then((r) => r.json())
+          .then((d) => {
+            setNotifs(d.notifications || []);
+            setNotifStats(d.stats || { total: 0, unread: 0, byType: {} });
+          })
           .catch(() => {})
       );
     }
@@ -316,6 +395,121 @@ export default function AdminPage() {
 
   const currentFields = TEMPLATE_FIELDS[selectedTemplate] || [];
 
+  const handleProductSave = async () => {
+    if (!productForm.slug || !productForm.name || !productForm.price) {
+      setProductError("Slug, название и цена обязательны");
+      return;
+    }
+    setProductSaving(true);
+    setProductError("");
+    try {
+      const isEdit = editingProduct && editingProduct.id;
+      const url = isEdit ? `/api/admin/products/${editingProduct.id}` : "/api/admin/products";
+      const method = isEdit ? "PATCH" : "POST";
+
+      const body = {
+        ...productForm,
+        sizes: typeof productForm.sizes === "string" ? productForm.sizes.split(",").map((s: string) => s.trim()).filter(Boolean) : productForm.sizes,
+        images: typeof productForm.images === "string" ? productForm.images.split(",").map((s: string) => s.trim()).filter(Boolean) : productForm.images,
+      };
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setEditingProduct(null);
+        setProductForm({});
+        // Reload products
+        fetch("/api/admin/products").then((r) => r.json()).then((d) => setProducts(d.products || [])).catch(() => {});
+      } else {
+        setProductError(data.error || "Ошибка сохранения");
+      }
+    } catch {
+      setProductError("Ошибка сети");
+    }
+    setProductSaving(false);
+  };
+
+  const handleProductDelete = async (id: string) => {
+    try {
+      await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
+      fetch("/api/admin/products").then((r) => r.json()).then((d) => setProducts(d.products || [])).catch(() => {});
+    } catch { /* silent */ }
+  };
+
+  const handleNotifDelete = async (id: string) => {
+    try {
+      await fetch("/api/admin/notifications", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const q = notifFilter ? `?type=${encodeURIComponent(notifFilter)}` : "";
+      fetch(`/api/admin/notifications${q}`).then((r) => r.json()).then((d) => {
+        setNotifs(d.notifications || []);
+        setNotifStats(d.stats || { total: 0, unread: 0, byType: {} });
+      }).catch(() => {});
+    } catch { /* silent */ }
+  };
+
+  const handleNotifBulkDelete = async (action: string) => {
+    try {
+      await fetch("/api/admin/notifications", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [action]: true }),
+      });
+      const q = notifFilter ? `?type=${encodeURIComponent(notifFilter)}` : "";
+      fetch(`/api/admin/notifications${q}`).then((r) => r.json()).then((d) => {
+        setNotifs(d.notifications || []);
+        setNotifStats(d.stats || { total: 0, unread: 0, byType: {} });
+      }).catch(() => {});
+    } catch { /* silent */ }
+  };
+
+  const handleNotifEditSave = async () => {
+    if (!editingNotif) return;
+    setNotifSaving(true);
+    try {
+      await fetch(`/api/admin/notifications/${editingNotif.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editingNotif.title,
+          body: editingNotif.body,
+          type: editingNotif.type,
+          isRead: editingNotif.isRead,
+        }),
+      });
+      setEditingNotif(null);
+      const q = notifFilter ? `?type=${encodeURIComponent(notifFilter)}` : "";
+      fetch(`/api/admin/notifications${q}`).then((r) => r.json()).then((d) => {
+        setNotifs(d.notifications || []);
+        setNotifStats(d.stats || { total: 0, unread: 0, byType: {} });
+      }).catch(() => {});
+    } catch { /* silent */ }
+    setNotifSaving(false);
+  };
+
+  const handleNotifToggleRead = async (id: string, currentRead: boolean) => {
+    try {
+      await fetch(`/api/admin/notifications/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isRead: !currentRead }),
+      });
+      setNotifs((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: !currentRead } : n)));
+      setNotifStats((prev) => ({
+        ...prev,
+        unread: currentRead ? prev.unread + 1 : Math.max(0, prev.unread - 1),
+      }));
+    } catch { /* silent */ }
+  };
+
   return (
     <div className="pt-24 pb-20 px-6 md:px-12 lg:px-24 min-h-screen">
       <div className="max-w-7xl mx-auto">
@@ -330,6 +524,8 @@ export default function AdminPage() {
         <div className="flex gap-1 mb-8 border-b border-[rgba(200,200,210,0.1)] overflow-x-auto">
           {([
             { key: "orders", label: "Заказы" },
+            { key: "products", label: "Товары" },
+            { key: "notifications", label: "Уведомления" },
             { key: "tg-broadcast", label: "TG Рассылка" },
             { key: "in-app", label: "Сайт уведомления" },
             { key: "users", label: "Пользователи" },
@@ -733,6 +929,364 @@ export default function AdminPage() {
               </details>
             ))}
             {sessions.length === 0 && <p className="text-center text-[#6B6B78] py-12">Нет TG сессий</p>}
+          </div>
+        )}
+
+        {/* ═══ Products Tab ═══ */}
+        {tab === "products" && !loadingData && (
+          <div>
+            {/* Product Form (create / edit) */}
+            {editingProduct !== null ? (
+              <div className="max-w-2xl space-y-4 mb-8 border border-[rgba(200,200,210,0.12)] bg-[#101014]/50 p-5">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-sm font-bold text-[#E8E8F0]">
+                    {editingProduct ? `Редактирование: ${editingProduct.name}` : "Новый товар"}
+                  </h2>
+                  <button
+                    onClick={() => { setEditingProduct(null); setProductForm({}); setProductError(""); }}
+                    className="text-[10px] font-bold tracking-wider uppercase text-[#6B6B78] hover:text-[#E8E8F0] transition-colors"
+                  >
+                    ✕ Отмена
+                  </button>
+                </div>
+                {productError && <p className="text-xs text-red-400/80">{productError}</p>}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#6B6B78]/60 block mb-1">Slug *</label>
+                    <input className="w-full bg-[#101014] border border-[rgba(200,200,210,0.14)] px-3 py-2 text-sm text-[#E8E8F0] focus:outline-none focus:border-[rgba(200,200,210,0.3)]" value={productForm.slug || ""} onChange={(e) => setProductForm({ ...productForm, slug: e.target.value })} placeholder="product-slug" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#6B6B78]/60 block mb-1">Название *</label>
+                    <input className="w-full bg-[#101014] border border-[rgba(200,200,210,0.14)] px-3 py-2 text-sm text-[#E8E8F0] focus:outline-none focus:border-[rgba(200,200,210,0.3)]" value={productForm.name || ""} onChange={(e) => setProductForm({ ...productForm, name: e.target.value })} placeholder="Название товара" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#6B6B78]/60 block mb-1">Цена (копейки) *</label>
+                    <input type="number" className="w-full bg-[#101014] border border-[rgba(200,200,210,0.14)] px-3 py-2 text-sm text-[#E8E8F0] focus:outline-none focus:border-[rgba(200,200,210,0.3)]" value={productForm.price || ""} onChange={(e) => setProductForm({ ...productForm, price: Number(e.target.value) })} placeholder="299000" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#6B6B78]/60 block mb-1">Старая цена (копейки)</label>
+                    <input type="number" className="w-full bg-[#101014] border border-[rgba(200,200,210,0.14)] px-3 py-2 text-sm text-[#E8E8F0] focus:outline-none focus:border-[rgba(200,200,210,0.3)]" value={productForm.oldPrice || ""} onChange={(e) => setProductForm({ ...productForm, oldPrice: e.target.value ? Number(e.target.value) : null })} placeholder="Пусто = нет скидки" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#6B6B78]/60 block mb-1">Категория</label>
+                    <input className="w-full bg-[#101014] border border-[rgba(200,200,210,0.14)] px-3 py-2 text-sm text-[#E8E8F0] focus:outline-none focus:border-[rgba(200,200,210,0.3)]" value={productForm.category || ""} onChange={(e) => setProductForm({ ...productForm, category: e.target.value })} placeholder="Верх" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#6B6B78]/60 block mb-1">Пол</label>
+                    <input className="w-full bg-[#101014] border border-[rgba(200,200,210,0.14)] px-3 py-2 text-sm text-[#E8E8F0] focus:outline-none focus:border-[rgba(200,200,210,0.3)]" value={productForm.gender || ""} onChange={(e) => setProductForm({ ...productForm, gender: e.target.value })} placeholder="Унисекс" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#6B6B78]/60 block mb-1">Коллекция</label>
+                    <input className="w-full bg-[#101014] border border-[rgba(200,200,210,0.14)] px-3 py-2 text-sm text-[#E8E8F0] focus:outline-none focus:border-[rgba(200,200,210,0.3)]" value={productForm.collection || ""} onChange={(e) => setProductForm({ ...productForm, collection: e.target.value })} placeholder="ANGELvsDEMON" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#6B6B78]/60 block mb-1">Stock</label>
+                    <input type="number" className="w-full bg-[#101014] border border-[rgba(200,200,210,0.14)] px-3 py-2 text-sm text-[#E8E8F0] focus:outline-none focus:border-[rgba(200,200,210,0.3)]" value={productForm.stock || ""} onChange={(e) => setProductForm({ ...productForm, stock: Number(e.target.value) })} placeholder="0" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#6B6B78]/60 block mb-1">Badge</label>
+                    <select className="w-full bg-[#101014] border border-[rgba(200,200,210,0.14)] px-3 py-2 text-sm text-[#E8E8F0] focus:outline-none focus:border-[rgba(200,200,210,0.3)]" value={productForm.badge || ""} onChange={(e) => setProductForm({ ...productForm, badge: e.target.value })}>
+                      <option value="">—</option>
+                      <option value="NEW">NEW</option>
+                      <option value="HIT">HIT</option>
+                      <option value="SALE">SALE</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#6B6B78]/60 block mb-1">Tag</label>
+                    <input className="w-full bg-[#101014] border border-[rgba(200,200,210,0.14)] px-3 py-2 text-sm text-[#E8E8F0] focus:outline-none focus:border-[rgba(200,200,210,0.3)]" value={productForm.tag || ""} onChange={(e) => setProductForm({ ...productForm, tag: e.target.value })} placeholder="Новинка" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#6B6B78]/60 block mb-1">Короткое описание</label>
+                  <input className="w-full bg-[#101014] border border-[rgba(200,200,210,0.14)] px-3 py-2 text-sm text-[#E8E8F0] focus:outline-none focus:border-[rgba(200,200,210,0.3)]" value={productForm.description || ""} onChange={(e) => setProductForm({ ...productForm, description: e.target.value })} placeholder="Описание товара" />
+                </div>
+                <div>
+                  <label className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#6B6B78]/60 block mb-1">Полное описание</label>
+                  <textarea rows={3} className="w-full bg-[#101014] border border-[rgba(200,200,210,0.14)] px-3 py-2 text-sm text-[#E8E8F0] focus:outline-none focus:border-[rgba(200,200,210,0.3)] resize-none" value={productForm.fullDescription || ""} onChange={(e) => setProductForm({ ...productForm, fullDescription: e.target.value })} placeholder="Подробное описание..." />
+                </div>
+                <div>
+                  <label className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#6B6B78]/60 block mb-1">Размеры (через запятую)</label>
+                  <input className="w-full bg-[#101014] border border-[rgba(200,200,210,0.14)] px-3 py-2 text-sm text-[#E8E8F0] focus:outline-none focus:border-[rgba(200,200,210,0.3)]" value={typeof productForm.sizes === "string" ? productForm.sizes : ""} onChange={(e) => setProductForm({ ...productForm, sizes: e.target.value })} placeholder="S, M, L, XL" />
+                </div>
+                <div>
+                  <label className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#6B6B78]/60 block mb-1">Images (через запятую)</label>
+                  <input className="w-full bg-[#101014] border border-[rgba(200,200,210,0.14)] px-3 py-2 text-sm text-[#E8E8F0] focus:outline-none focus:border-[rgba(200,200,210,0.3)]" value={typeof productForm.images === "string" ? productForm.images : ""} onChange={(e) => setProductForm({ ...productForm, images: e.target.value })} placeholder="/products/img1.jpg, /products/img2.jpg" />
+                </div>
+                <button
+                  onClick={handleProductSave}
+                  disabled={productSaving}
+                  className="w-full py-3 text-[11px] font-black tracking-[0.15em] uppercase bg-[#C8C8D0] text-[#08080A] hover:bg-[#E8E8F0] transition-colors disabled:opacity-40"
+                >
+                  {productSaving ? "Сохранение..." : "💾 Сохранить"}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  setEditingProduct({} as ProductRow);
+                  setProductForm({ slug: "", name: "", price: "", category: "Верх", gender: "Унисекс", stock: "0", badge: "", tag: "", sizes: "", images: "", description: "", fullDescription: "", collection: "", oldPrice: null });
+                }}
+                className="mb-6 px-4 py-2.5 text-[10px] font-bold tracking-[0.12em] uppercase bg-[#C8C8D0] text-[#08080A] hover:bg-[#E8E8F0] transition-colors"
+              >
+                + Добавить товар
+              </button>
+            )}
+
+            {/* Product List */}
+            {products.length === 0 ? (
+              <p className="text-center text-[#6B6B78] py-16">Нет товаров</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {products.map((p) => {
+                  const priceRub = Math.floor(p.price / 100);
+                  const img = (() => { try { return JSON.parse(p.images || "[]"); } catch { return []; } })()[0];
+                  return (
+                    <div key={p.id} className={`border bg-[#101014]/30 p-4 ${!p.active ? "border-red-400/20 opacity-60" : "border-[rgba(200,200,210,0.08)]"}`}>
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-[#E8E8F0] truncate">{p.name}</p>
+                          <p className="text-[10px] text-[#6B6B78] mt-0.5">{p.category} · {p.stock} шт</p>
+                        </div>
+                        {p.badge && (
+                          <span className={`ml-2 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider ${
+                            p.badge === "NEW" ? "bg-[rgba(200,200,210,0.15)] text-[#C8C8D0]" :
+                            p.badge === "HIT" ? "bg-emerald-400/10 text-emerald-400/70" :
+                            "bg-red-400/10 text-red-400/70"
+                          }`}>{p.badge}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-bold text-[#C8C8D0]">{priceRub.toLocaleString("ru-RU")} ₽</p>
+                        {!p.active && <span className="text-[9px] text-red-400/60 uppercase tracking-wider">Скрыт</span>}
+                      </div>
+                      <div className="flex gap-2 mt-3 pt-3 border-t border-[rgba(200,200,210,0.06)]">
+                        <button
+                          onClick={() => {
+                            setEditingProduct(p);
+                            const { active: _a, createdAt: _c, ...rest } = p;
+                            setProductForm({
+                              ...rest,
+                              sizes: (() => { try { return JSON.parse(p.sizes).join(", "); } catch { return p.sizes; } })(),
+                              images: (() => { try { return JSON.parse(p.images).join(", "); } catch { return p.images; } })(),
+                              details: p.details,
+                            });
+                          }}
+                          className="flex-1 py-1.5 text-[9px] font-bold tracking-wider uppercase border border-[rgba(200,200,210,0.14)] text-[#6B6B78] hover:text-[#E8E8F0] hover:border-[rgba(200,200,210,0.3)] transition-colors"
+                        >
+                          ✏️ Редактировать
+                        </button>
+                        <button
+                          onClick={() => handleProductDelete(p.id)}
+                          className="py-1.5 px-3 text-[9px] font-bold tracking-wider uppercase text-red-400/50 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                        >
+                          {p.active ? "🗑" : "♻️"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ═══ Notifications Tab ═══ */}
+        {tab === "notifications" && !loadingData && (
+          <div>
+            {/* Stats bar */}
+            <div className="flex flex-wrap items-center gap-4 mb-6">
+              <div className="flex gap-3">
+                <span className="text-xs text-[#6B6B78]">
+                  Всего: <span className="text-[#E8E8F0] font-bold">{notifStats.total}</span>
+                </span>
+                <span className="text-xs text-[#6B6B78]">
+                  Непрочитанных: <span className="text-amber-400/80 font-bold">{notifStats.unread}</span>
+                </span>
+              </div>
+              <div className="flex gap-2 ml-auto">
+                <button
+                  onClick={() => handleNotifBulkDelete("deleteRead")}
+                  className="px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase border border-[rgba(200,200,210,0.14)] text-[#6B6B78] hover:text-[#E8E8F0] hover:border-[rgba(200,200,210,0.3)] transition-colors"
+                >
+                  Удалить прочитанные
+                </button>
+                <button
+                  onClick={() => handleNotifBulkDelete("deleteAll")}
+                  className="px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase text-red-400/50 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                >
+                  Удалить все
+                </button>
+              </div>
+            </div>
+
+            {/* Type filter */}
+            <div className="flex flex-wrap gap-2 mb-6">
+              <button
+                onClick={() => setNotifFilter("")}
+                className={`px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase border transition-colors ${
+                  !notifFilter
+                    ? "border-[#C8C8D0] text-[#C8C8D0] bg-[#C8C8D0]/10"
+                    : "border-[rgba(200,200,210,0.14)] text-[#6B6B78] hover:border-[rgba(200,200,210,0.3)]"
+                }`}
+              >
+                Все
+              </button>
+              {Object.entries(notifStats.byType).map(([type, count]) => (
+                <button
+                  key={type}
+                  onClick={() => setNotifFilter(notifFilter === type ? "" : type)}
+                  className={`px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase border transition-colors ${
+                    notifFilter === type
+                      ? "border-[#C8C8D0] text-[#C8C8D0] bg-[#C8C8D0]/10"
+                      : "border-[rgba(200,200,210,0.14)] text-[#6B6B78] hover:border-[rgba(200,200,210,0.3)]"
+                  }`}
+                >
+                  {type} ({count})
+                </button>
+              ))}
+            </div>
+
+            {/* Editing modal */}
+            {editingNotif && (
+              <div className="max-w-2xl mb-6 border border-[rgba(200,200,210,0.12)] bg-[#101014]/50 p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-sm font-bold text-[#E8E8F0]">Редактирование уведомления</h2>
+                  <button
+                    onClick={() => setEditingNotif(null)}
+                    className="text-[10px] font-bold tracking-wider uppercase text-[#6B6B78] hover:text-[#E8E8F0] transition-colors"
+                  >
+                    ✕ Отмена
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#6B6B78]/60 block mb-1">Заголовок</label>
+                    <input
+                      className="w-full bg-[#101014] border border-[rgba(200,200,210,0.14)] px-3 py-2 text-sm text-[#E8E8F0] focus:outline-none focus:border-[rgba(200,200,210,0.3)]"
+                      value={editingNotif.title}
+                      onChange={(e) => setEditingNotif({ ...editingNotif, title: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#6B6B78]/60 block mb-1">Текст</label>
+                    <textarea
+                      rows={3}
+                      className="w-full bg-[#101014] border border-[rgba(200,200,210,0.14)] px-3 py-2 text-sm text-[#E8E8F0] focus:outline-none focus:border-[rgba(200,200,210,0.3)] resize-none"
+                      value={editingNotif.body}
+                      onChange={(e) => setEditingNotif({ ...editingNotif, body: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#6B6B78]/60 block mb-1">Тип</label>
+                      <select
+                        className="w-full bg-[#101014] border border-[rgba(200,200,210,0.14)] px-3 py-2 text-sm text-[#E8E8F0] focus:outline-none focus:border-[rgba(200,200,210,0.3)]"
+                        value={editingNotif.type}
+                        onChange={(e) => setEditingNotif({ ...editingNotif, type: e.target.value })}
+                      >
+                        <option value="info">info</option>
+                        <option value="broadcast">broadcast</option>
+                        <option value="welcome">welcome</option>
+                        <option value="promo">promo</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-bold tracking-[0.12em] uppercase text-[#6B6B78]/60 block mb-1">Прочитано</label>
+                      <select
+                        className="w-full bg-[#101014] border border-[rgba(200,200,210,0.14)] px-3 py-2 text-sm text-[#E8E8F0] focus:outline-none focus:border-[rgba(200,200,210,0.3)]"
+                        value={editingNotif.isRead ? "true" : "false"}
+                        onChange={(e) => setEditingNotif({ ...editingNotif, isRead: e.target.value === "true" })}
+                      >
+                        <option value="false">Нет</option>
+                        <option value="true">Да</option>
+                      </select>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleNotifEditSave}
+                    disabled={notifSaving}
+                    className="w-full py-3 text-[11px] font-black tracking-[0.15em] uppercase bg-[#C8C8D0] text-[#08080A] hover:bg-[#E8E8F0] transition-colors disabled:opacity-40"
+                  >
+                    {notifSaving ? "Сохранение..." : "💾 Сохранить"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Notifications list */}
+            {notifs.length === 0 ? (
+              <p className="text-center text-[#6B6B78] py-16">Нет уведомлений</p>
+            ) : (
+              <div className="space-y-2 max-h-[700px] overflow-y-auto">
+                {notifs.map((n) => (
+                  <div
+                    key={n.id}
+                    className={`border px-5 py-4 ${
+                      !n.isRead
+                        ? "border-[rgba(200,200,210,0.12)] bg-[rgba(200,200,210,0.03)]"
+                        : "border-[rgba(200,200,210,0.06)] bg-[#101014]/30"
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className={`text-xs font-bold ${!n.isRead ? "text-[#E8E8F0]" : "text-[#E8E8F0]/60"}`}>
+                            {n.title}
+                          </p>
+                          {!n.isRead && (
+                            <span className="px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-amber-400/70 bg-amber-400/10">
+                              Новое
+                            </span>
+                          )}
+                          <span className="px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-[#6B6B78]/50 bg-[rgba(200,200,210,0.06)]">
+                            {n.type}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#6B6B78] line-clamp-2 mb-1">{n.body}</p>
+                        <div className="flex items-center gap-3 text-[9px] text-[#6B6B78]/40">
+                          <span>{n.userName}</span>
+                          {n.userEmail && <span>{n.userEmail}</span>}
+                          <span className="ml-auto">{new Date(n.createdAt).toLocaleString("ru-RU")}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => handleNotifToggleRead(n.id, n.isRead)}
+                          className="p-1.5 text-[#6B6B78]/40 hover:text-[#C8C8D0] transition-colors"
+                          title={n.isRead ? "Пометить непрочитанным" : "Пометить прочитанным"}
+                        >
+                          {n.isRead ? (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /></svg>
+                          ) : (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="10" /></svg>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => setEditingNotif(n)}
+                          className="p-1.5 text-[#6B6B78]/40 hover:text-[#C8C8D0] transition-colors"
+                          title="Редактировать"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleNotifDelete(n.id)}
+                          className="p-1.5 text-[#6B6B78]/40 hover:text-red-400/70 transition-colors"
+                          title="Удалить"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -155,3 +155,34 @@ model EmailVerification {
   @@index([email])
   @@index([expiresAt])
 }
+
+model Product {
+  @@map("app_products")
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String
+  price          Int      // цена в копейках
+  oldPrice       Int?     // старая цена в копейках (null = нет скидки)
+  category       String
+  gender         String   @default("Унисекс")
+  collection     String   @default("")
+  description    String   @default("")
+  fullDescription String  @default("")
+  details        String   @default("[]") // JSON array
+  material       String   @default("")
+  care           String   @default("")
+  sizes          String   @default("[]") // JSON array
+  images         String   @default("[]") // JSON array
+  stock          Int      @default(0)
+  badge          String   @default("")   // "NEW", "HIT", "SALE", ""
+  gradient       String   @default("from-[#101014] via-[#1a1a20] to-[#0e0e12]")
+  pattern        String   @default("")
+  icon           String   @default("tee")
+  tag            String   @default("")
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([slug])
+  @@index([active])
+}

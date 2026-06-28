@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 import ScrollReveal from "@/components/ScrollReveal";
 
 type DeliveryType = "cdek-pvz" | "cdek-courier" | "post";
@@ -59,6 +60,7 @@ function formatTimer(seconds: number): string {
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, hydrated, totalPrice, totalItems, clearCart, promoCode, discount, applyPromo, removePromo, discountedTotal } = useCart();
+  const { user } = useAuth();
   const [form, setForm] = useState<CheckoutForm>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -67,6 +69,7 @@ export default function CheckoutPage() {
   const [promoInput, setPromoInput] = useState("");
   const [promoError, setPromoError] = useState(false);
   const [deliveryCost, setDeliveryCost] = useState<number | null>(null);
+  const prefilled = useRef(false);
 
   // Payment timer
   const [timerSeconds, setTimerSeconds] = useState(PAYMENT_TIMER_SECONDS);
@@ -87,6 +90,18 @@ export default function CheckoutPage() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [submitted]);
+
+  // Pre-fill form from auth context if user is logged in
+  useEffect(() => {
+    if (prefilled.current || !user || form.name || form.email) return;
+    prefilled.current = true;
+    setForm((prev) => ({
+      ...prev,
+      name: prev.name || user.name || "",
+      email: prev.email || user.email || "",
+      telegram: prev.telegram || (user.telegram_id ? `@${user.username || ""}` : ""),
+    }));
+  }, [user]);
 
   const update = (field: keyof CheckoutForm, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -131,6 +146,7 @@ export default function CheckoutPage() {
       const res = await fetch("/api/orders/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           ...form,
           items: items.map((item) => ({

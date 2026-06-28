@@ -35,6 +35,6 @@ export async function GET(request: NextRequest) {
     user.role = authUser.role;
   }
 
-  const orders = await getOrdersForUser(user.id);
+  const orders = await getOrdersForUser(user.id, user.email);
   return NextResponse.json({ authenticated: true, user, orders });
 }
